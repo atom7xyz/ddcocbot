@@ -34,7 +34,7 @@ class StartHandler @Autowired constructor(
         
         LoggerUtils.logCommandProcessing("/start", telegramId, username)
         
-        if (!ChatUtils.isChatGroup(message)) {
+        if (ChatUtils.isChatGroup(message)) {
             LoggerUtils.logUserAction(telegramId, "attempted to use /start in a group chat", "chatId: ${message.chat.id}")
             
             val keyboard = inlineKeyboard(

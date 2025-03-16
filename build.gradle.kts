@@ -9,6 +9,8 @@ plugins {
 
 group = "xyz.atom7"
 version = "1.0.3"
+val name = "ddcoc"
+val main = "xyz.atom7.ddcoc.DdcocApplicationKt"
 
 java {
     toolchain {
@@ -52,11 +54,23 @@ tasks.withType<Test> {
     useJUnitPlatform()
 }
 
+tasks.register<JavaExec>("runWithAgent") {
+    description = "Runs the application with the GraalVM tracing agent"
+
+    mainClass.set(main)
+    classpath = sourceSets["main"].runtimeClasspath
+
+    // Configure the agent
+    jvmArgs = listOf(
+        "-agentlib:native-image-agent=config-output-dir=src/main/resources/META-INF/native-image"
+    )
+}
+
 graalvmNative {
     binaries {
         named("main") {
-            imageName.set("ddcoc")
-            mainClass.set("xyz.atom7.ddcoc.DdcocApplicationKt")
+            imageName.set(name)
+            mainClass.set(main)
 
             buildArgs.addAll(
                 // [Optimization and Memory Settings] ----------------------------------------
@@ -84,7 +98,7 @@ graalvmNative {
                 "--initialize-at-build-time=" +                         // Classes to initialize during image build
                         "org.slf4j.LoggerFactory," +                    // Logging framework initialization
                         "ch.qos.logback," +                             // Logback configuration
-                        "com.fasterxml.jackson" +
+                        "com.fasterxml.jackson," +
                         "org.springframework.boot.SpringApplication" +  // Spring Boot startup class
 
 

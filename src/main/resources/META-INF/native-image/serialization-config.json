@@ -1,11 +1,8 @@
-[
-  {
-    "name": "io.github.dehuckakpyt.telegrambot.api.client.TelegramApiClient$TelegramResponse",
-    "allDeclaredConstructors": true,
-    "allPublicConstructors": true,
-    "allDeclaredMethods": true,
-    "allPublicMethods": true,
-    "allDeclaredFields": true,
-    "allPublicFields": true
-  }
-]
+{
+  "types":[
+  ],
+  "lambdaCapturingTypes":[
+  ],
+  "proxies":[
+  ]
+}

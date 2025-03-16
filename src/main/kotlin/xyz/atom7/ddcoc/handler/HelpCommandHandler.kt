@@ -35,7 +35,7 @@ class HelpCommandHandler @Autowired constructor(
         
         LoggerUtils.logUserAction(telegramId, "sending help message")
         
-        if (!isRegistered && !ChatUtils.isChatGroup(message)) {
+        if (!isRegistered && ChatUtils.isChatGroup(message)) {
             val keyboard = inlineKeyboard(
                 InlineKeyboardButton(messageService.notRegisteredButton, url = "https://t.me/$botUsername?start=start")
             )
