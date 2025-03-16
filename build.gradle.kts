@@ -8,7 +8,7 @@ plugins {
 }
 
 group = "xyz.atom7"
-version = "1.0.6"
+version = "1.0.7"
 val main = "xyz.atom7.ddcoc.DdcocApplicationKt"
 
 java {
@@ -23,7 +23,7 @@ repositories {
 
 dependencies {
     implementation("org.springframework.boot:spring-boot-starter-cache")
-    implementation("org.hibernate:hibernate-graalvm")
+    implementation("org.hibernate.orm:hibernate-graalvm")
     implementation("org.springframework.boot:spring-boot-starter-data-jpa")
     implementation("org.jetbrains.kotlin:kotlin-reflect")
     developmentOnly("org.springframework.boot:spring-boot-devtools")
@@ -107,13 +107,6 @@ graalvmNative {
                 "-H:+PrintClassInitialization", // Log class initialization decisions (debugging)
                 "-H:+PrintAnalysisCallTree"     // Show full call tree during static analysis
             )
-
-            // Handle additional arguments from properties more safely
-            project.findProperty("org.graalvm.buildtools.native.additionalArgs")
-                ?.toString()
-                ?.splitToSequence(',')  // Use comma delimiter for safer argument handling
-                ?.filter { it.isNotBlank() }
-                ?.forEach { buildArgs.add(it) }
 
             resources.autodetect()
         }
