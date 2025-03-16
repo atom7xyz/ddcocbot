@@ -4,11 +4,11 @@ plugins {
     id("org.springframework.boot") version "3.4.3"
     id("io.spring.dependency-management") version "1.1.7"
     kotlin("plugin.jpa") version "1.9.25"
-    id("org.graalvm.buildtools.native") version "0.10.3"
+    id("org.graalvm.buildtools.native") version "0.10.6"
 }
 
 group = "xyz.atom7"
-version = "1.0.7"
+version = "1.0.8"
 val main = "xyz.atom7.ddcoc.DdcocApplicationKt"
 
 java {
@@ -23,7 +23,6 @@ repositories {
 
 dependencies {
     implementation("org.springframework.boot:spring-boot-starter-cache")
-    implementation("org.hibernate.orm:hibernate-graalvm")
     implementation("org.springframework.boot:spring-boot-starter-data-jpa")
     implementation("org.jetbrains.kotlin:kotlin-reflect")
     developmentOnly("org.springframework.boot:spring-boot-devtools")
@@ -99,7 +98,7 @@ graalvmNative {
                         "org.slf4j.LoggerFactory," +                    // Logging framework initialization
                         "ch.qos.logback," +                             // Logback configuration
                         "com.fasterxml.jackson," +
-                        "org.hibernate," + "jakarta.persistence," + "javax.persistence," +
+                        "io.github.dehuckakpyt.telegrambot," +
                         "org.springframework.boot.SpringApplication" +  // Spring Boot startup class
 
 
