@@ -8,7 +8,7 @@ plugins {
 }
 
 group = "xyz.atom7"
-version = "1.0.2"
+version = "1.0.3"
 
 java {
     toolchain {
@@ -84,6 +84,7 @@ graalvmNative {
                 "--initialize-at-build-time=" +                         // Classes to initialize during image build
                         "org.slf4j.LoggerFactory," +                    // Logging framework initialization
                         "ch.qos.logback," +                             // Logback configuration
+                        "com.fasterxml.jackson" +
                         "org.springframework.boot.SpringApplication" +  // Spring Boot startup class
 
 
