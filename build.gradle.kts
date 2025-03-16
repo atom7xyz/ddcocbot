@@ -60,7 +60,7 @@ graalvmNative {
 
             buildArgs.addAll(
                 // [Optimization and Memory Settings] ----------------------------------------
-                "-O2",                      // Optimization level GraalVM should compile the image in
+                "-O0",                      // Optimization level GraalVM should compile the image in
                 "--gc=G1",                  // Select G1 garbage collector for balance between throughput/pause times
                 "-H:+UnlockExperimentalVMOptions",
                 "-R:MaxGCPauseMillis=100",  // Target maximum GC pause time (milliseconds)
@@ -98,6 +98,8 @@ graalvmNative {
                 ?.splitToSequence(',')  // Use comma delimiter for safer argument handling
                 ?.filter { it.isNotBlank() }
                 ?.forEach { buildArgs.add(it) }
+
+            resources.autodetect()
         }
     }
 }
