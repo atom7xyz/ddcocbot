@@ -8,7 +8,7 @@ plugins {
 }
 
 group = "xyz.atom7"
-version = "1.0.8"
+version = "1.1.0"
 val main = "xyz.atom7.ddcoc.DdcocApplicationKt"
 
 java {
@@ -51,65 +51,6 @@ allOpen {
 
 tasks.withType<Test> {
     useJUnitPlatform()
-}
-
-tasks.register<JavaExec>("runWithAgent") {
-    description = "Runs the application with the GraalVM tracing agent"
-
-    mainClass.set(main)
-    classpath = sourceSets["main"].runtimeClasspath
-
-    // Configure the agent
-    jvmArgs = listOf(
-        "-agentlib:native-image-agent=config-output-dir=src/main/resources/META-INF/native-image"
-    )
-}
-
-graalvmNative {
-    binaries {
-        named("main") {
-            imageName.set("ddcoc")
-            mainClass.set(main)
-
-            buildArgs.addAll(
-                // [Optimization and Memory Settings] ----------------------------------------
-                "-O2",                      // Optimization level GraalVM should compile the image in
-                "--gc=G1",                  // Select G1 garbage collector for balance between throughput/pause times
-                "-H:+UnlockExperimentalVMOptions",
-                "-R:MaxGCPauseMillis=100",  // Target maximum GC pause time (milliseconds)
-
-                "-H:G1HeapRegionSize=2m",   // Memory region size for G1 collector (smaller regions
-                                            // improve allocation precision but increase overhead)
-
-
-                // [Build Configuration] ----------------------------------------------------
-                "--enable-url-protocols=http",              // Enable HTTP URL handling (required for web apps)
-                "--no-fallback",                            // Force full native build
-                "-H:+ReportExceptionStackTraces",           // Show full stacktraces for build-time initialization errors
-
-                "-H:+ReportUnsupportedElementsAtRuntime",   // Warn about reflection/JNI/resource usages
-                                                            // that might fail at runtime
-
-                "-H:+RemoveSaturatedTypeFlows",             // Aggressive optimization to eliminate redundant type checks
-
-
-                // [Class Initialization] ----------------------------------------------------
-                "--initialize-at-build-time=" +                         // Classes to initialize during image build
-                        "org.slf4j.LoggerFactory," +                    // Logging framework initialization
-                        "ch.qos.logback," +                             // Logback configuration
-                        "com.fasterxml.jackson," +
-                        "io.github.dehuckakpyt.telegrambot," +
-                        "org.springframework.boot.SpringApplication" +  // Spring Boot startup class
-
-
-                // [Native Image Diagnostics] -----------------------------------------------
-                "-H:+PrintClassInitialization", // Log class initialization decisions (debugging)
-                "-H:+PrintAnalysisCallTree"     // Show full call tree during static analysis
-            )
-
-            resources.autodetect()
-        }
-    }
 }
 
 tasks.withType<JavaCompile> {
