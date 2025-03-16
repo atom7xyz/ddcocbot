@@ -1,4 +1,4 @@
-name: Release Build (JAR + Native Image)
+name: Release Build (JAR Only)
 
 on:
   push:
@@ -15,25 +15,25 @@ jobs:
   build-jar:
     name: Build JAR with Corretto
     runs-on: ubuntu-latest
-    
+
     steps:
       - uses: actions/checkout@v4
-      
+
       - name: Set up JDK
         uses: actions/setup-java@v4
         with:
           java-version: '21'
           distribution: 'corretto'
-          
+
       - name: Setup Gradle
         uses: gradle/gradle-build-action@v2
-        
+
       - name: Grant execute permission for gradlew
         run: chmod +x gradlew
-        
+
       - name: Build JAR
         run: ./gradlew bootJar
-        
+
       - name: Get version from tag
         id: get_version
         run: |
@@ -46,71 +46,72 @@ jobs:
           cd build/libs/
           mv *.jar ddcoc-${GITHUB_REF#refs/tags/}-default.jar
         if: startsWith(github.ref, 'refs/tags/')
-        
+
       - name: Upload JAR
         uses: actions/upload-artifact@v4
         with:
           name: ddcoc-jar
           path: build/libs/ddcoc-*-default.jar
 
-  build-native:
-    name: Native Build with GraalVM
-    strategy:
-      matrix:
-        architecture: [amd64, arm64]
-        include:
-          - architecture: amd64
-            runner: ubuntu-latest
-            artifact-name: ddcoc-x86_64
-            graalvm-args: "--native-image-info"
-          - architecture: arm64
-            runner: ubuntu-24.04-arm
-            artifact-name: ddcoc-arm64
-            graalvm-args: "--native-image-info"
-    
-    runs-on: ${{ matrix.runner }}
-    
-    steps:
-      - uses: actions/checkout@v4
-      
-      - name: Setup GraalVM
-        uses: graalvm/setup-graalvm@v1
-        with:
-          java-version: '21'
-          distribution: 'graalvm'
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-          native-image-job-reports: 'true'
+        # Commented out Native Image build
+        # build-native:
+        #   name: Native Build with GraalVM
+        #   strategy:
+        #     matrix:
+        #       architecture: [amd64, arm64]
+        #       include:
+        #         - architecture: amd64
+        #           runner: ubuntu-latest
+        #           artifact-name: ddcoc-x86_64
+        #           graalvm-args: "--native-image-info"
+        #         - architecture: arm64
+        #           runner: ubuntu-24.04-arm
+        #           artifact-name: ddcoc-arm64
+        #           graalvm-args: "--native-image-info"
 
-      - name: Setup Gradle
-        uses: gradle/gradle-build-action@v2
-        
-      - name: Grant execute permission for gradlew
-        run: chmod +x gradlew
-        
-      - name: Build Native Image
-        run: |
-          ./gradlew -Porg.graalvm.buildtools.native.imageName=ddcoc nativeCompile \
-            -Porg.graalvm.buildtools.native.additionalArgs="${{ matrix.graalvm-args }}"
-        
-      - name: Rename executable for architecture
-        run: |
-          cd build/native/nativeCompile/
-          ls -la
-          mv ddcoc ddcoc-${GITHUB_REF#refs/tags/}-${{ matrix.architecture }}
-        if: startsWith(github.ref, 'refs/tags/')
-        
-      - name: Upload Native Image
-        uses: actions/upload-artifact@v4
-        with:
-          name: ${{ matrix.artifact-name }}
-          path: build/native/nativeCompile/ddcoc-*-${{ matrix.architecture }}
+        #   runs-on: ${{ matrix.runner }}
+
+        #   steps:
+        #     - uses: actions/checkout@v4
+
+        #     - name: Setup GraalVM
+        #       uses: graalvm/setup-graalvm@v1
+        #       with:
+        #         java-version: '21'
+        #         distribution: 'graalvm'
+        #         github-token: ${{ secrets.GITHUB_TOKEN }}
+        #         native-image-job-reports: 'true'
+
+        #     - name: Setup Gradle
+        #       uses: gradle/gradle-build-action@v2
+
+        #     - name: Grant execute permission for gradlew
+        #       run: chmod +x gradlew
+
+        #     - name: Build Native Image
+        #       run: |
+        #         ./gradlew -Porg.graalvm.buildtools.native.imageName=ddcoc nativeCompile \
+        #           -Porg.graalvm.buildtools.native.additionalArgs="${{ matrix.graalvm-args }}"
+
+        #     - name: Rename executable for architecture
+        #       run: |
+        #         cd build/native/nativeCompile/
+        #         ls -la
+        #         mv ddcoc ddcoc-${GITHUB_REF#refs/tags/}-${{ matrix.architecture }}
+        #       if: startsWith(github.ref, 'refs/tags/')
+
+  #     - name: Upload Native Image
+  #       uses: actions/upload-artifact@v4
+  #       with:
+  #         name: ${{ matrix.artifact-name }}
+  #         path: build/native/nativeCompile/ddcoc-*-${{ matrix.architecture }}
 
   create-release:
     name: Create Release
-    needs: [build-jar, build-native]
+    needs: [build-jar]
     runs-on: ubuntu-latest
     if: startsWith(github.ref, 'refs/tags/')
-    
+
     steps:
       - name: Get version from tag
         id: get_version
@@ -128,8 +129,6 @@ jobs:
         with:
           files: |
             artifacts/ddcoc-jar/ddcoc-*-default.jar
-            artifacts/ddcoc-x86_64/ddcoc-*-amd64
-            artifacts/ddcoc-arm64/ddcoc-*-arm64
           name: ${{ env.VERSION }}
           generate_release_notes: true
         env:
