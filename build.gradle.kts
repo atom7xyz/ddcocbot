@@ -8,8 +8,7 @@ plugins {
 }
 
 group = "xyz.atom7"
-version = "1.0.4"
-val name = "ddcoc"
+version = "1.0.5"
 val main = "xyz.atom7.ddcoc.DdcocApplicationKt"
 
 java {
@@ -69,12 +68,12 @@ tasks.register<JavaExec>("runWithAgent") {
 graalvmNative {
     binaries {
         named("main") {
-            imageName.set(name)
+            imageName.set("ddcoc")
             mainClass.set(main)
 
             buildArgs.addAll(
                 // [Optimization and Memory Settings] ----------------------------------------
-                "-O0",                      // Optimization level GraalVM should compile the image in
+                "-O2",                      // Optimization level GraalVM should compile the image in
                 "--gc=G1",                  // Select G1 garbage collector for balance between throughput/pause times
                 "-H:+UnlockExperimentalVMOptions",
                 "-R:MaxGCPauseMillis=100",  // Target maximum GC pause time (milliseconds)
