@@ -21,7 +21,7 @@ services:
       - CLAN=YPPQ9PUC
       - TELEGRAM-BOT_USERNAME=ddcocbot
       - TELEGRAM-BOT_TOKEN=????
-    command: ["sh", "-c", "./ddcoc-1.0.0-arm64"]
+    command: ["sh", "-c", "./ddcoc-1.0.1-arm64"]
     restart: unless-stopped
     user: "1000:1000"
     depends_on:

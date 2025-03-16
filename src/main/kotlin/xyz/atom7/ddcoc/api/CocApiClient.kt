@@ -115,7 +115,6 @@ class CocApiClient(
                 .bodyToMono<TokenVerificationResponse>()
                 .block()
             
-            // Return true if status is "ok"
             val result = response?.status?.equals("ok", ignoreCase = true) == true
             logger.info("Token verification result for player $formattedTag: $result")
             result

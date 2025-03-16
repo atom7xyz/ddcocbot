@@ -28,11 +28,9 @@ class PlayerCommandHandler @Autowired constructor(
         
         LoggerUtils.logCommandProcessing("/me", userId, username)
         
-        // Check if user is registered
         if (!userService.isUserRegistered(userId)) {
             LoggerUtils.logUserAction(userId, "attempted to use /me but is not registered")
             
-            // Create registration button that redirects to private chat
             val keyboard = inlineKeyboard(
                 InlineKeyboardButton(messageService.notRegisteredButton, url = "https://t.me/$botUsername?start=start")
             )
@@ -77,10 +75,8 @@ class PlayerCommandHandler @Autowired constructor(
             return@command
         }
         
-        // Format record information if available
         val recordInfo = if (player.bestTrophies > 0) " (Record: `${player.bestTrophies}`)" else ""
         
-        // Format player information using the template
         val playerInfo = messageService.playerInfoTemplate.format(
             player.name,
             player.tag,
@@ -106,11 +102,9 @@ class PlayerCommandHandler @Autowired constructor(
         
         LoggerUtils.logCommandProcessing("/player", userId, username)
         
-        // Check if user is registered
         if (!userService.isUserRegistered(userId)) {
             LoggerUtils.logUserAction(userId, "attempted to use /player but is not registered")
             
-            // Create registration button that redirects to private chat
             val keyboard = inlineKeyboard(
                 InlineKeyboardButton(messageService.notRegisteredButton, url = "https://t.me/$botUsername?start=start")
             )
@@ -145,10 +139,8 @@ class PlayerCommandHandler @Autowired constructor(
             return@command
         }
         
-        // Format record information if available
         val recordInfo = if (player.bestTrophies > 0) " (Record: `${player.bestTrophies}`)" else ""
         
-        // Format player information
         val playerInfo = messageService.playerInfoTemplate.format(
             player.name,
             player.tag,

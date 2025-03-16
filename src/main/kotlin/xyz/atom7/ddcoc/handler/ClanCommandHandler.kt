@@ -34,11 +34,9 @@ class ClanCommandHandler @Autowired constructor(
         
         LoggerUtils.logCommandProcessing("/clan", userId, username)
         
-        // Check if user is registered
         if (!userService.isUserRegistered(userId)) {
             LoggerUtils.logUserAction(userId, "attempted to use /clan but is not registered")
             
-            // Create registration button that redirects to private chat
             val keyboard = inlineKeyboard(
                 InlineKeyboardButton(messageService.notRegisteredButton, url = "https://t.me/$botUsername?start=start")
             )
@@ -63,7 +61,6 @@ class ClanCommandHandler @Autowired constructor(
             return@command
         }
         
-        // Format clan information
         LoggerUtils.logUserAction(userId, "formatting clan information", "clan: ${clan.name} (${clan.tag})")
         val clanInfo = messageService.clanInfoTemplate.format(
             clan.name,
@@ -98,11 +95,9 @@ class ClanCommandHandler @Autowired constructor(
         
         LoggerUtils.logCommandProcessing("/members", userId, username)
         
-        // Check if user is registered
         if (!userService.isUserRegistered(userId)) {
             LoggerUtils.logUserAction(userId, "attempted to use /members but is not registered")
             
-            // Create registration button that redirects to private chat
             val keyboard = inlineKeyboard(
                 InlineKeyboardButton(messageService.notRegisteredButton, url = "https://t.me/$botUsername?start=start")
             )
@@ -136,18 +131,12 @@ class ClanCommandHandler @Autowired constructor(
             return@command
         }
         
-        // Sort members by clan rank
-        LoggerUtils.logUserAction(userId, "sorting and formatting members", "clan: ${clan.name}, members: ${clan.memberList.size}")
-        val sortedMembers = clan.memberList.sortedBy { it.clanRank }
-        
-        // Create a formatted list of members
-        val header = messageService.clanMembersHeader.format(clan.name, sortedMembers.size)
+        val header = messageService.clanMembersHeader.format(clan.name, clan.memberList.size)
         
         val membersInfo = StringBuilder(header)
         var messageCount = 1
         
-        for (member in sortedMembers) {
-            // Format each field with monospace font and consistent indentation
+        for (member in clan.memberList) {
             val formattedMember = String.format(
                 "%d. *%s* (%s)\n" +
                 "   Livello: %d\n" +
@@ -164,8 +153,6 @@ class ClanCommandHandler @Autowired constructor(
             
             membersInfo.append(formattedMember)
             
-            // Telegram has a 4096 character limit for messages
-            // If we're getting close, send the current batch and start a new one
             if (membersInfo.length > 3500) {
                 LoggerUtils.logUserAction(userId, "sending members list part $messageCount", "clan: ${clan.name}")
                 bot.sendMessage(

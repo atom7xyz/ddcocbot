@@ -31,12 +31,10 @@ class HelpCommandHandler @Autowired constructor(
         LoggerUtils.logUserRegistrationStatus(telegramId, isRegistered)
         
         val warningText = if (!isRegistered) messageService.helpNotRegisteredWarning else ""
-        
         val helpText = messageService.helpText.format(warningText)
         
         LoggerUtils.logUserAction(telegramId, "sending help message")
         
-        // If user is not registered, and we're in a group chat, add a registration button
         if (!isRegistered && !ChatUtils.isChatGroup(message)) {
             val keyboard = inlineKeyboard(
                 InlineKeyboardButton(messageService.notRegisteredButton, url = "https://t.me/$botUsername?start=start")

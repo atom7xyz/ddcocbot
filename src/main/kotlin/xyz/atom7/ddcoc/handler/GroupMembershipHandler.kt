@@ -3,10 +3,9 @@ package xyz.atom7.ddcoc.handler
 import io.github.dehuckakpyt.telegrambot.annotation.HandlerComponent
 import io.github.dehuckakpyt.telegrambot.ext.container.chatId
 import io.github.dehuckakpyt.telegrambot.ext.update.message.chatId
-import io.github.dehuckakpyt.telegrambot.handler.BotHandler
 import io.github.dehuckakpyt.telegrambot.handler.BotUpdateHandler
+import io.github.dehuckakpyt.telegrambot.model.telegram.User
 import org.springframework.beans.factory.annotation.Autowired
-import org.springframework.beans.factory.annotation.Value
 import xyz.atom7.ddcoc.service.UserService
 import xyz.atom7.ddcoc.util.LoggerUtils
 
@@ -14,46 +13,50 @@ import xyz.atom7.ddcoc.util.LoggerUtils
 class GroupMembershipHandler @Autowired constructor(
     private val userService: UserService
 ) : BotUpdateHandler({
-    
-    // Handle new chat members
-    message {
-        if (newChatMembers == null || newChatMembers!!.isEmpty()) 
-            return@message
-        
-        val newMember = newChatMembers!!.firstOrNull() ?: return@message
-        val memberId = newMember.id
-        
-        LoggerUtils.logUserAction(memberId, "joined a group", "chatId: $chatId")
-        
-        // Check if this is our registered user
+
+    /**
+     * Handle member actions (join/leave) with logging and messaging
+     *
+     * @param member The chat member
+     * @param action The action being performed ("joined" or "left")
+     * @param messageTemplate Function to generate the message text
+     */
+    suspend fun handleMemberAction(
+        member: User,
+        chatId: Long,
+        action: String,
+        messageTemplate: (String, String) -> String
+    ) {
+        val memberId = member.id
+        val memberName = member.firstName
+
+        LoggerUtils.logUserAction(memberId, "$action a group", "chatId: $chatId")
+
         val user = userService.getUser(memberId)
-        if (user != null && user.isRegistered) {
-            LoggerUtils.logUserAction(memberId, "registered user joined group", "cocName: ${user.cocPlayerName}")
-            bot.sendMessage(
-                chatId = chatId,
-                text = "Benvenuto ${newMember.firstName} (${user.cocPlayerName}) nel gruppo del clan!"
-            )
+        if (user == null || !user.isRegistered) {
+            LoggerUtils.logUserAction(memberId, "user was not registered", "chatId: $chatId")
+            return
+        }
+
+        LoggerUtils.logUserAction(memberId, "registered user $action group", "cocName: ${user.cocPlayerName}")
+        bot.sendMessage(
+            chatId = chatId,
+            text = messageTemplate(memberName, user.cocPlayerName ?: "Unknown")
+        )
+    }
+
+    // Handler joins/leaves from the groups
+    message {
+        newChatMembers?.forEach { member ->
+            handleMemberAction(member, chatId, "joined") { name, cocName ->
+                "Benvenuto $name ($cocName) nel gruppo del clan!"
+            }
+        }
+
+        leftChatMember?.let { member ->
+            handleMemberAction(member, chatId, "left") { name, cocName ->
+                "$name ($cocName) ha lasciato il gruppo."
+            }
         }
     }
-    
-    // Handle left chat members
-    message {
-        if (leftChatMember == null) 
-            return@message
-        
-        val leftMember = leftChatMember!!
-        val memberId = leftMember.id
-        
-        LoggerUtils.logUserAction(memberId, "left a group", "chatId: $chatId")
-        
-        // Check if this is our registered user
-        val user = userService.getUser(memberId)
-        if (user != null && user.isRegistered) {
-            LoggerUtils.logUserAction(memberId, "registered user left group", "cocName: ${user.cocPlayerName}")
-            bot.sendMessage(
-                chatId = chatId,
-                text = "${leftMember.firstName} (${user.cocPlayerName}) ha lasciato il gruppo."
-            )
-        }
-    }
-}) 
+})

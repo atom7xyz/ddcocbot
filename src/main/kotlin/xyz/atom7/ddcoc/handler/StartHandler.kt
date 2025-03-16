@@ -59,14 +59,13 @@ class StartHandler @Autowired constructor(
                 text = messageService.welcomeBack.format(user?.cocPlayerName ?: firstName)
             )
             
-            // Show available commands
             bot.sendMessage(
                 chatId = chatId,
                 text = messageService.useHelpCommand
             )
         } else {
             LoggerUtils.logUserAction(telegramId, "starting registration process")
-            // Create inline buttons for registration methods
+            
             val keyboard = inlineKeyboard(
                 callbackButton(messageService.registerByNameButton, "register_by_name"),
                 callbackButton(messageService.registerByIdButton, "register_by_tag")
@@ -101,7 +100,6 @@ class StartHandler @Autowired constructor(
         val telegramId = query.from.id
         LoggerUtils.logUserAction(telegramId, "selected 'Register by TAG' method")
         
-        // Send the prompt for player tag
         bot.sendMessage(
             chatId = query.message?.chat?.id ?: return@callback,
             text = messageService.provideCocUsernameTag
@@ -123,10 +121,8 @@ class StartHandler @Autowired constructor(
                 val state = conversationStateManager.getState(telegramId)
                 val isNameRegistration = state == ConversationState.AWAITING_PLAYER_NAME
                 
-                // Process player input (name or tag)
                 var playerInput = text
                 
-                // For tag registration, ensure it starts with #
                 if (!isNameRegistration && !playerInput.startsWith("#")) {
                     playerInput = "#$playerInput"
                     LoggerUtils.logUserAction(telegramId, "added # to player tag", "tag: $playerInput")
@@ -136,7 +132,6 @@ class StartHandler @Autowired constructor(
                 LoggerUtils.logUserAction(telegramId, "processing player $logType input", "input: '$playerInput'")
                 LoggerUtils.logUserAction(telegramId, "verifying player $logType", "$logType: '$playerInput'")
                 
-                // Call the appropriate verification method based on registration type
                 val result = if (isNameRegistration) {
                     userService.verifyAndRegisterPlayer(telegramId, playerInput)
                 } else {
@@ -180,7 +175,7 @@ class StartHandler @Autowired constructor(
                     }
                     RegistrationResult.Success -> {
                         LoggerUtils.logUserAction(telegramId, "player successfully verified", "$logType: '$playerInput'")
-                        // Player found in the clan, now ask for API token to verify identity
+
                         bot.sendMessage(
                             chatId = chatId,
                             text = messageService.provideApiToken
@@ -188,14 +183,13 @@ class StartHandler @Autowired constructor(
                         
                         LoggerUtils.logUserAction(telegramId, "sending API token instructions")
 
-                        // Update conversation state to wait for API token
                         conversationStateManager.setState(telegramId, ConversationState.AWAITING_API_TOKEN)
                         next("send_api_token")
                         return@step
                     }
                     else -> {
                         LoggerUtils.logWarning("Unexpected result '$result' while processing player $logType for user $telegramId")
-                        // Unexpected result
+
                         bot.sendMessage(
                             chatId = chatId,
                             text = messageService.unexpectedError
@@ -227,7 +221,6 @@ class StartHandler @Autowired constructor(
         
         LoggerUtils.logUserAction(telegramId, "processing API token")
         
-        // Get the user to retrieve the player tag
         val user = userService.getUser(telegramId)
         if (user?.cocPlayerTag == null) {
             LoggerUtils.logWarning("User $telegramId or player tag not found during API token verification")
@@ -248,32 +241,27 @@ class StartHandler @Autowired constructor(
             RegistrationResult.Success -> {
                 LoggerUtils.logUserAction(telegramId, "registration completed successfully")
                 
-                // Send success message with heart emoji
                 bot.sendMessage(
                     chatId = chatId,
                     text = messageService.registrationSuccessHeart
                 )
                 
-                // Send completion message
                 bot.sendMessage(
                     chatId = chatId,
                     text = messageService.registrationComplete
                 )
 
-                // Invite to join the group
                 LoggerUtils.logUserAction(telegramId, "inviting to join group")
                 bot.sendMessage(
                     chatId = chatId,
                     text = messageService.joinGroup.format(groupLink)
                 )
 
-                // Send help message
                 bot.sendMessage(
                     chatId = chatId,
                     text = messageService.useHelpCommand
                 )
 
-                // Clear conversation state
                 conversationStateManager.clear(telegramId)
             }
             RegistrationResult.InvalidToken -> {
@@ -287,7 +275,7 @@ class StartHandler @Autowired constructor(
             }
             else -> {
                 LoggerUtils.logWarning("Unexpected verification result '$verificationResult' for user $telegramId")
-                // Other errors
+
                 bot.sendMessage(
                     chatId = chatId,
                     text = messageService.verificationError

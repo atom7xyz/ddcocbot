@@ -31,7 +31,6 @@ class AdminCommandHandler @Autowired constructor(
             return@command
         }
         
-        // Check if user is an admin (Leader or Co-Leader)
         val isAdmin = userService.isUserAdmin(telegramId)
         LoggerUtils.logUserAction(telegramId, "admin status check", "isAdmin: $isAdmin")
         
@@ -55,7 +54,6 @@ class AdminCommandHandler @Autowired constructor(
         
         var notInClanCount = 0
         
-        // Check if each user is still in the clan
         users.forEach { user ->
             if (user.cocPlayerTag != null) {
                 val isInClan = userService.isPlayerInClan(user.cocPlayerTag!!)
@@ -65,7 +63,6 @@ class AdminCommandHandler @Autowired constructor(
                     LoggerUtils.logUserAction(telegramId, "user not in clan",
                         "user: ${user.telegramId}, player: ${user.cocPlayerName}")
                     
-                    // Send a message to the group
                     bot.sendMessage(
                         chatId = chatId,
                         text = messageService.userNotInClan.format(
@@ -177,7 +174,6 @@ class AdminCommandHandler @Autowired constructor(
         
         LoggerUtils.logCommandProcessing("/users", telegramId, username)
         
-        // Check if user is an admin (Leader or Co-Leader)
         val isAdmin = userService.isUserAdmin(telegramId)
         LoggerUtils.logUserAction(telegramId, "admin status check", "isAdmin: $isAdmin")
         

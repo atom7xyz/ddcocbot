@@ -26,7 +26,6 @@ class CocApiErrorHandler
         
         return when {
             status == HttpStatus.NOT_FOUND -> {
-                // Check if this is a player or clan lookup
                 if (uri.contains("/players/") || uri.contains("/clans/")) {
                     logger.info("Resource not found: $uri")
                 } else {
