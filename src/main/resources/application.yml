@@ -1,0 +1,128 @@
+spring:
+  datasource:
+    url: jdbc:postgresql://ddcocbot-database:5432/db_ddcocbot
+    driverClassName: org.postgresql.Driver
+    username: user_ddcocbot
+    password: password_ddcocbot
+  jpa:
+    hibernate:
+      ddl-auto: update
+
+# Message constants
+messages:
+  # Registration messages
+  welcome-back: "Bentornato, %s! Sei già registrato."
+  use-help-command: "Usa /help per vedere tutti i comandi disponibili."
+  registration-welcome: "Benvenuto! Per registrarti, dovrai fornire il tuo nome utente di Clash of Clans o il tuo tag giocatore e il tuo API token."
+  provide-coc-username-name: "Per favore, fornisci il tuo nome utente di Clash of Clans come appare nel gioco"
+  provide-coc-username-tag: "Per favore, fornisci il tuo tag giocatore di Clash of Clans (es: #ABC123)"
+  provide-api-token: "Ottimo! Ora ho bisogno del tuo API token per verificare la tua identità.\n\nSegui questi passaggi:\n\n1. Apri Clash of Clans\n2. Vai su Impostazioni (⚙️)\n3. Vai su Altre impostazioni\n4. Scorri fino a \"API Token\"\n5. Fai clic su \"Copia\" e incolla qui il token"
+  registration-success-heart: "❤️"
+  registration-complete: "Registrazione completata! Sei stato registrato come membro del clan."
+  join-group: "Ti invitiamo a unirti al nostro gruppo: %s"
+  player-not-found-in-clan: "Mi dispiace, ma il giocatore '%s' non è stato trovato nel nostro clan. Controlla il nome e riprova."
+  player-not-in-clan-by-tag: "Mi dispiace, ma il giocatore con tag '%s' non è stato trovato nel nostro clan. Controlla il tag e riprova."
+  player-not-found-by-tag: "Giocatore con tag '%s' non trovato. Controlla il tag e riprova."
+  clan-info-error: "Errore: Impossibile recuperare le informazioni del clan. Riprova più tardi o contatta l'amministratore."
+  user-info-error: "Errore: Informazioni utente non trovate. Usa il comando /start di nuovo."
+  not-registered: "Non sei ancora registrato."
+  not-registered-button: "REGISTRATI"
+  invalid-api-token: "Il token API fornito non è valido. Per favore riprova."
+  
+  # Additional registration messages from StartHandler
+  group-chat-error: "Questo comando funziona solo in chat privata. Clicca sul pulsante qui sotto per iniziare la registrazione."
+  private-chat-button: "Apri in chat privata"
+  register-by-name-button: "Registra via Nome"
+  register-by-id-button: "Registra via ID"
+  unexpected-error: "Errore imprevisto. Riprova più tardi."
+  verification-error: "Errore durante la verifica. Riprova più tardi."
+  
+  # Player command messages
+  incomplete-user-info: "Le tue informazioni sono incomplete. Usa /start per registrarti di nuovo."
+  player-info-error: "Impossibile recuperare le tue informazioni. Riprova più tardi."
+  player-tag-required: "Specifica un tag giocatore. Uso: /player #PLAYERTAG"
+  player-not-found: "Giocatore '%s' non trovato. Controlla il nome e riprova."
+  
+  # Admin command messages
+  not-authorized: "Non sei autorizzato a utilizzare questo comando. Solo i Capi e i Co-Capi del clan possono utilizzarlo."
+  refresh-started: "Verifica membri del clan in corso..."
+  refresh-completed: "Verifica completata. Membri non trovati nel clan: `%d`"
+  user-not-in-clan: "⚠️ Il giocatore %s (%s) non è più nel clan!"
+  kick-usage: "Uso: /kick <username Telegram o nome giocatore CoC>"
+  user-not-found: "Utente non trovato. Controlla il nome e riprova."
+  user-kicked: "L'utente %s è stato rimosso dal gruppo."
+  kick-failed: "Impossibile rimuovere l'utente dal gruppo. Assicurati che il bot abbia i permessi necessari."
+  users-header: "*Utenti Registrati*\n\n"
+  user-list-item: "• *%s* (ID: `%d`)\n  Tag: %s, Nome CoC: %s\n"
+  no-registered-users: "Non ci sono utenti registrati."
+  command-group-only: "Questo comando può essere eseguito solo nei gruppi."
+  
+  # Player info template
+  player-info-template: |
+    *Informazioni Giocatore*
+    
+    Nome: %s
+    Tag: %s
+    Municipio: `%d` 🏠
+    Livello: `%d` 🎖
+    Coppe: `%d` 🏆%s
+    
+    Clan: %s
+  
+  # Clan command messages
+  clan-not-found: "Clan non trovato. Controlla il tag e riprova."
+  clan-no-members: "Questo clan non ha membri."
+  
+  # Clan info template
+  clan-info-template: |
+    *Informazioni Clan*
+    
+    Nome: %s
+    Tag: %s
+    Livello: 🏅 %d
+    Descrizione: %s
+    
+    Membri: 👥 %d/50
+    Tipo: %s
+    Frequenza Guerra: %s
+    Registro Guerra: %s
+    
+    Statistiche Guerra:
+    - Vittorie: %d ✅
+    - Serie Vittorie: %d 🔥
+    - Sconfitte: %s ❌
+    - Pareggi: %s 🔄
+    
+    Coppe:
+    - Coppe del Clan: %d 🏆
+    - Coppe della Capitale: %s 🏰
+  
+  # Clan members template
+  clan-members-header: "*Membri del clan %s (%d/50)*\n\n"
+  clan-members-continued: "*Continua: Membri del clan %s*\n\n"
+
+  # Help command
+  help-not-registered-warning: "⚠️ *Non sei ancora registrato. Usa /start per registrarti.*\n\n"
+  help-text: |
+    *Comandi del Bot:*
+    
+    %s*Registrazione*
+    /start - Inizia il processo di registrazione (puoi usare il tuo nome utente o il tuo tag giocatore #ABC123)
+    
+    *Informazioni Giocatore*
+    /me - Mostra le tue informazioni
+    /player #TAG - Mostra informazioni su un giocatore specifico
+    
+    *Informazioni Clan*
+    /clan - Mostra informazioni sul nostro clan
+    /clan #TAG - Mostra informazioni su un clan specifico
+    /members - Elenca tutti i membri del nostro clan
+    /members #TAG - Elenca tutti i membri di un clan specifico
+    
+    *Comandi Amministrativi*
+    /refresh - Verifica se i membri sono ancora nel clan (solo admin)
+    /kick - Rimuove un utente dal gruppo (solo admin)
+    /users - Mostra tutti gli utenti registrati (solo admin)
+    
+    *Altro*
+    /help - Mostra questo messaggio di aiuto
