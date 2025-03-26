@@ -47,6 +47,20 @@ class ConversationStateManager
         LoggerUtils.logUserAction(userId, "clearing conversation state")
         stateMap.remove(userId)
     }
+    
+    /**
+     * Check if a user is in registration process
+     * 
+     * @param userId The user ID
+     * @return True if user is in registration process, false otherwise
+     */
+    fun isUserInRegistrationProcess(userId: Long): Boolean
+    {
+        val state = getState(userId)
+        return state == ConversationState.AWAITING_PLAYER_NAME ||
+               state == ConversationState.AWAITING_PLAYER_TAG ||
+               state == ConversationState.AWAITING_API_TOKEN
+    }
 }
 
 /**

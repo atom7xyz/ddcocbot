@@ -116,6 +116,12 @@ class StartHandler @Autowired constructor(
         val telegramId = message.from?.id ?: return@step
         val text = message.text ?: return@step
 
+        if (ChatUtils.isChatGroup(message) && conversationStateManager.isUserInRegistrationProcess(telegramId)) {
+            LoggerUtils.logUserAction(telegramId, "ignoring message in group chat during registration", 
+                                     "state: ${conversationStateManager.getState(telegramId)}")
+            return@step
+        }
+
         when (conversationStateManager.getState(telegramId)) {
             ConversationState.AWAITING_PLAYER_NAME, ConversationState.AWAITING_PLAYER_TAG -> {
                 val state = conversationStateManager.getState(telegramId)
@@ -218,6 +224,11 @@ class StartHandler @Autowired constructor(
     step("send_api_token") {
         val telegramId = message.from?.id ?: return@step
         val apiToken = message.text ?: return@step
+        
+        if (ChatUtils.isChatGroup(message)) {
+            LoggerUtils.logUserAction(telegramId, "ignoring message in group chat during API token verification")
+            return@step
+        }
         
         LoggerUtils.logUserAction(telegramId, "processing API token")
         

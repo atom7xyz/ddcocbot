@@ -21,7 +21,7 @@ services:
       - CLAN=YPPQ9PUC
       - TELEGRAM-BOT_USERNAME=ddcocbot
       - TELEGRAM-BOT_TOKEN=????
-    command: ["java", "-jar", "./ddcoc-1.1.0-default.jar"]
+    command: ["java", "-jar", "./ddcoc-1.1.1-default.jar"]
     restart: unless-stopped
     user: "1000:1000"
     depends_on:
