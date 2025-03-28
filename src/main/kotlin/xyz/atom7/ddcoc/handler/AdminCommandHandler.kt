@@ -205,10 +205,11 @@ class AdminCommandHandler @Autowired constructor(
         // Add each user to the list
         users.forEach { user ->
             val userInfo = messageService.userListItem.format(
-                user.username ?: "No username",
-                user.telegramId,
-                user.cocPlayerTag ?: "N/A",
-                user.cocPlayerName ?: "N/A"
+                user.cocPlayerName ?: "?",
+                user.username ?: "?",
+                user.firstName + " " + user.lastName,
+                user.cocPlayerTag ?: "?",
+                user.telegramId
             )
             
             // Check if adding this user would exceed Telegram's message limit

@@ -53,7 +53,7 @@ messages:
   user-kicked: "L'utente %s è stato rimosso dal gruppo."
   kick-failed: "Impossibile rimuovere l'utente dal gruppo. Assicurati che il bot abbia i permessi necessari."
   users-header: "*Utenti Registrati*\n\n"
-  user-list-item: "• *%s* (ID: `%d`)\n  Tag: %s, Nome CoC: %s\n"
+  user-list-item: "• *%s* — *%s* | *%s*\n    (`%s` — `%s`)\n"
   no-registered-users: "Non ci sono utenti registrati."
   command-group-only: "Questo comando può essere eseguito solo nei gruppi."
   
