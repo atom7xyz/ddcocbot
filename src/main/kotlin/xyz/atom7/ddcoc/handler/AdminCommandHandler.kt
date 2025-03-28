@@ -204,10 +204,12 @@ class AdminCommandHandler @Autowired constructor(
         
         // Add each user to the list
         users.forEach { user ->
+            val space = if (user.firstName == null) "" else " "
+
             val userInfo = messageService.userListItem.format(
                 user.cocPlayerName ?: "?",
                 user.username ?: "?",
-                user.firstName + " " + user.lastName,
+                user.firstName.orEmpty() + space + user.lastName.orEmpty(),
                 user.cocPlayerTag ?: "?",
                 user.telegramId
             )

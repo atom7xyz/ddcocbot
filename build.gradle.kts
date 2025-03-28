@@ -7,7 +7,7 @@ plugins {
 }
 
 group = "xyz.atom7"
-version = "1.1.2"
+version = "1.1.3"
 val main = "xyz.atom7.ddcoc.DdcocApplicationKt"
 
 java {
