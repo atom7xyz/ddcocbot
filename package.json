@@ -1,0 +1,30 @@
+{
+	"private": true,
+	"type": "module",
+	"scripts": {
+		"dev": "bun --watch src/index.ts",
+		"start": "NODE_ENV=production bun src/index.ts",
+		"lint": "bun x @biomejs/biome check",
+		"lint:fix": "bun run lint --fix",
+		"generate": "bun x drizzle-kit generate",
+		"push": "bun x drizzle-kit push",
+		"migrate": "bun x drizzle-kit migrate",
+		"studio": "bun x drizzle-kit studio"
+	},
+	"dependencies": {
+		"@gramio/auto-retry": "^0.0.3",
+		"@gramio/prompt": "^1.1.4",
+		"@verrou/core": "^0.5.1",
+		"cacheables": "^2.0.0",
+		"drizzle-orm": "^0.41.0",
+		"env-var": "^7.5.0",
+		"gramio": "^0.2.6",
+		"pg": "^8.14.1"
+	},
+	"devDependencies": {
+		"@biomejs/biome": "^1.9.4",
+		"@types/bun": "^1.2.9",
+		"drizzle-kit": "^0.30.6",
+		"typescript": "^5.8.3"
+	}
+}
