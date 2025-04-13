@@ -35,7 +35,11 @@ const callbackStart = async (
 	);
 
 	// Set conversation state to wait for user's Clash tag
-	setConversation(context.from.id, undefined, ConversationState.WAITING_TAG);
+	setConversation(
+		BigInt(context.from.id),
+		undefined,
+		ConversationState.WAITING_TAG,
+	);
 };
 
 /**

@@ -13,7 +13,7 @@ Municipio: \`${player.townHallLevel}\` 🏠
 Livello: \`${player.expLevel}\` 🎖
 Coppe: \`${player.trophies}\` 🏆 (Record: \`${player.bestTrophies}\`)
 
-Clan: \`${player.clan?.name}\`
+Clan: \`${player.clan?.name ?? "Nessuno"}\`
 `;
 
 const playerCommand = async (

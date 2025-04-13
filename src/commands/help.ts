@@ -4,24 +4,22 @@ const helpMessage = `
 Comandi del Bot:
 
 Registrazione
-/start - Inizia il processo di registrazione
+/start - Comando base
 
 Informazioni Giocatore
-/me - Mostra le tue informazioni
-/player #TAG - Mostra informazioni su un giocatore specifico
+/profile #TAG - Mostra informazioni su un giocatore (anche via #TAG)
 
 Informazioni Clan
-/clan - Mostra informazioni sul nostro clan
-/clan #TAG - Mostra informazioni su un clan specifico
-/members - Elenca tutti i membri del nostro clan
-/members #TAG - Elenca tutti i membri di un clan specifico
+/clan - Mostra informazioni su un clan (anche via #TAG)
+/members - Elenca tutti i membri di un clan (anche via #TAG)
 
 Comandi Amministrativi
-/kick - Rimuove un utente dal gruppo (solo co-leaders)
+/ban #TAG - Banna un utente dal gruppo (solo co-leaders) (via #TAG)
 /users - Mostra tutti gli utenti registrati (solo co-leaders)
+/sync - Sincronizza gli utenti (solo co-leaders)
 
 Altro
-/help - Mostra questo messaggio di aiuto
+/help - Mostra la lista dei comandi
 `;
 
 const helpCommand = async (context: MessageContext<Bot>) => {

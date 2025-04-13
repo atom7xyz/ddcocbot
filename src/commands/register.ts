@@ -14,7 +14,7 @@ export const registerCommand = async (
 	const argLength = split?.length ?? 0;
 
 	if (!split || argLength !== 3) {
-		await context.reply("Utilizzo: /register <tag> <telegram_id> 1");
+		await context.reply("Utilizzo: /register <tag> <telegram_id>");
 		return;
 	}
 

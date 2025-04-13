@@ -21,27 +21,6 @@ export const db = drizzle({
 });
 
 /**
- * Main function that seeds the database by clearing all tables
- */
-const main = async () => {
-	try {
-		console.log("Seeding database...");
-
-		// Clear all tables
-		// await db.delete(schema.telegramProfiles);
-		// await db.delete(schema.clashProfiles);
-		// await db.delete(schema.users);
-
-		console.log("Database seeded successfully");
-	} catch (error) {
-		console.error(error);
-	}
-};
-
-// Execute the main seeding function
-main();
-
-/**
  * Enum representing possible roles in the system
  */
 export enum Role {

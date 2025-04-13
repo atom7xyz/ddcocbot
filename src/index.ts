@@ -1,5 +1,5 @@
 import { bot } from "./bot.ts";
-import { config } from "./config.ts";
+
 const signals = ["SIGINT", "SIGTERM"];
 
 for (const signal of signals) {

@@ -12,8 +12,8 @@ export class TelegramApiService {
 	constructor() {
 		// Initialize cache with logging enabled
 		this.cache = new Cacheables({
-			logTiming: true,
-			log: true,
+			logTiming: false,
+			log: false,
 		});
 	}
 

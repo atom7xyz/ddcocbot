@@ -5,7 +5,6 @@ import {
 	varchar,
 	timestamp,
 	bigint,
-	integer,
 	char,
 	pgEnum,
 } from "drizzle-orm/pg-core";

@@ -8,8 +8,12 @@ import {
 	callbackTag,
 	callbackApiToken,
 } from "shared/callback-data/index.ts";
-import { chatHandler } from "services/convo";
-import { playerCommand } from "./player.ts";
+import {
+	chatHandler,
+	leftChatMemberHandler,
+	newChatMembersHandler,
+} from "services/convo";
+import { playerCommand } from "./profile.ts";
 import { membersCommand } from "./members.ts";
 import type { Bot, MessageContext } from "gramio";
 import { usersCommand } from "./users.ts";
@@ -24,32 +28,35 @@ import {
 } from "shared/keyboards/index.ts";
 import type { telegramProfiles, clashProfiles, users } from "db/schema.ts";
 import { registerCommand } from "./register.ts";
+import { syncCommand } from "./sync.ts";
+import { banCommand } from "./ban.ts";
 
-function registerCommands(bot: Bot) {
+function registerEvents(bot: Bot) {
 	bot
 		.command("start", privateChatCommand(startCommand))
 		.command("help", helpCommand)
 		.command("clan", userCommand(clanCommand))
 		.command("profile", userCommand(playerCommand))
 		.command("members", userCommand(adminCommand(membersCommand)))
-		.command("users", userCommand(adminCommand(usersCommand)))
+		.command(
+			"users",
+			privateChatCommand(userCommand(adminCommand(usersCommand))),
+		)
 		.command(
 			"register",
 			privateChatCommand(userCommand(adminCommand(registerCommand))),
 		)
-		.callbackQuery("start", callbackStart)
-		.callbackQuery("howto_tag", callbackTag);
-}
+		.command("sync", privateChatCommand(userCommand(adminCommand(syncCommand))))
+		.command("ban", userCommand(adminCommand(banCommand)))
 
-function registerCallbackQueries(bot: Bot) {
-	bot
 		.callbackQuery("start", callbackStart)
 		.callbackQuery("howto_tag", callbackTag)
-		.callbackQuery("howto_api_token", callbackApiToken);
-}
+		.callbackQuery("howto_api_token", callbackApiToken)
 
-function registerMessages(bot: Bot) {
-	bot.on("message", privateChatCommand(chatHandler, false));
+		.on("message", privateChatCommand(chatHandler, false))
+
+		.on("new_chat_members", newChatMembersHandler)
+		.on("left_chat_member", leftChatMemberHandler);
 }
 
 function userCommand(
@@ -143,6 +150,7 @@ function privateChatCommand(
 			if (!alert) {
 				return;
 			}
+
 			await context.reply(
 				"Questo comando funziona solo in chat privata. Clicca sul pulsante qui sotto per iniziare la registrazione.",
 				{
@@ -158,9 +166,8 @@ function privateChatCommand(
 		const userClashProfile = user?.clashProfile;
 		const userTelegramProfile = user?.telegramProfile;
 
-		await context.sendChatAction("typing");
 		return func(context, user, userClashProfile, userTelegramProfile);
 	};
 }
 
-export { registerCommands, registerCallbackQueries, registerMessages };
+export { registerEvents };
