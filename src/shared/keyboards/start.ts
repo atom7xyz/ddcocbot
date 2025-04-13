@@ -1,3 +1,41 @@
+import type { Bot, MessageContext } from "gramio";
+import { checkPrivateChat } from "utils";
+
+const onlyPrivateChatKeyboard = (context: MessageContext<Bot>) => {
+	const privateChat = checkPrivateChat(context);
+
+	if (privateChat) {
+		return [];
+	}
+
+	return [
+		[
+			{
+				text: "Apri in chat privata",
+				url: "https://t.me/ddcocbot?start=start",
+			},
+		],
+	];
+};
+
+const notRegisteredKeyboard = [
+	[
+		{
+			text: "Registrati",
+			url: "https://t.me/ddcocbot?start=start",
+		},
+	],
+];
+
+const suggestClashOfStatsKeyboard = (name: string, tag: string) => [
+	[
+		{
+			text: "Clash of Stats",
+			url: `https://www.clashofstats.com/players/${name}-${tag.replace("#", "")}/summary`,
+		},
+	],
+];
+
 const startKeyboard = [
 	[
 		{
@@ -25,4 +63,11 @@ const apiTokenKeyboard = [
 	],
 ];
 
-export { startKeyboard, tagKeyboard, apiTokenKeyboard };
+export {
+	onlyPrivateChatKeyboard,
+	notRegisteredKeyboard,
+	startKeyboard,
+	tagKeyboard,
+	apiTokenKeyboard,
+	suggestClashOfStatsKeyboard,
+};

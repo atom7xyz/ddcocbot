@@ -1,12 +1,12 @@
-import { getTelegramUserId } from "commands/index.ts";
+import { getTelegramUserId } from "utils";
 import { apiTokenSent } from "commands/start";
 import { tagSent } from "commands/start";
 import type { Bot, MessageContext } from "gramio";
 import {
 	ConversationState,
 	getConversation,
-	setConversation,
 } from "services/convo/conversationState";
+import type { clashProfiles, telegramProfiles, users } from "db/schema.ts";
 
 /**
  * Handles the conversation state for a user by processing incoming messages
@@ -22,7 +22,12 @@ import {
  * @param context - The message context containing the user's message and metadata
  * @returns Promise<void> - Returns early if no active conversation exists
  */
-const chatHandler = async (context: MessageContext<Bot>) => {
+const chatHandler = async (
+	context: MessageContext<Bot>,
+	user: typeof users.$inferSelect | null | undefined,
+	userClashProfile: typeof clashProfiles.$inferSelect | null | undefined,
+	userTelegramProfile: typeof telegramProfiles.$inferSelect | null | undefined,
+) => {
 	// Get the user's Telegram ID from the message context
 	const id = getTelegramUserId(context);
 
@@ -40,13 +45,25 @@ const chatHandler = async (context: MessageContext<Bot>) => {
 	// Handle message based on current conversation state
 	if (conversation.state === ConversationState.WAITING_TAG) {
 		// Process message as tag
-		await tagSent(message, context);
+		await tagSent(
+			message,
+			context,
+			user,
+			userClashProfile,
+			userTelegramProfile,
+		);
 		return;
 	}
 
 	if (conversation.state === ConversationState.WAITING_API_TOKEN) {
 		// Process message as API token
-		await apiTokenSent(message, context);
+		await apiTokenSent(
+			message,
+			context,
+			user,
+			userClashProfile,
+			userTelegramProfile,
+		);
 		return;
 	}
 };

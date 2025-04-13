@@ -25,16 +25,17 @@ const callbackStart = async (
 
 	await context.sendChatAction("typing");
 
-	setConversation(context.from.id, undefined, ConversationState.WAITING_TAG);
-
 	await context.send(
-		"Per prima cosa, servirebbe che mi indicassi il tuo TAG, lo puoi trovare nel tuo profilo di Clash of Clans (esempio: #2POR98UYJ).",
+		"Per prima cosa, servirebbe che mi indicassi il tuo TAG, lo puoi trovare nel tuo profilo di Clash of Clans (esempio: #2P0R98UYJ).",
 		{
 			reply_markup: {
 				inline_keyboard: tagKeyboard,
 			},
 		},
 	);
+
+	// Set conversation state to wait for user's Clash tag
+	setConversation(context.from.id, undefined, ConversationState.WAITING_TAG);
 };
 
 /**
@@ -61,7 +62,7 @@ const callbackTag = async (
 		await MediaUpload.url("https://atom7.xyz/share/u/wRkIRlja.jpg"),
 		{
 			caption:
-				"Puoi trovare il tuo TAG nel tuo profilo di Clash of Clans, ad esempio: #2POR98UYJ",
+				"Puoi trovare il tuo TAG nel tuo profilo di Clash of Clans, ad esempio: #2P0R98UYJ",
 		},
 	);
 };

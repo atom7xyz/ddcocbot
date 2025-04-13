@@ -1,4 +1,4 @@
-import { getTelegramUser, getTelegramUserId } from "commands";
+import { checkClashProfileExists, getTelegramUserId } from "utils";
 import { db, roleToEnum } from "db";
 import { clashProfiles, telegramProfiles, users } from "db/schema";
 import { eq } from "drizzle-orm";
@@ -25,43 +25,38 @@ import { config } from "config";
  *
  * @param context - The message context containing user information
  */
-const start = async (context: MessageContext<Bot>) => {
-	const telegramUser = getTelegramUser(context);
-
-	// Check if user already exists in database
-	const user = await db.query.users.findFirst({
-		where: eq(users.telegramProfileId, telegramUser.id),
-		with: {
-			clashProfile: true,
-			telegramProfile: true,
-		},
-	});
-
+const startCommand = async (
+	context: MessageContext<Bot>,
+	user: typeof users.$inferSelect | null | undefined,
+	userClashProfile: typeof clashProfiles.$inferSelect | null | undefined,
+	userTelegramProfile: typeof telegramProfiles.$inferSelect | null | undefined,
+) => {
 	// If user already has a Clash profile, welcome them back
-	if (user?.clashProfile) {
-		await context.send(
-			`Bentornato, ${user.clashProfile.name}! Sei già registrato!`,
+	if (userClashProfile) {
+		await context.reply(
+			`Bentornato, ${userClashProfile.name}! Sei già registrato!`,
 		);
 		await context.send("Usa /help per vedere tutti i comandi disponibili.");
 		return;
 	}
 
 	// Create new Telegram profile if it doesn't exist
-	if (!user?.telegramProfile) {
+	if (!userTelegramProfile) {
+		const telegramId = getTelegramUserId(context);
 		await db.insert(telegramProfiles).values({
-			id: telegramUser.id,
-			username: telegramUser.username,
-			firstName: telegramUser.firstName,
-			lastName: telegramUser.lastName,
+			id: telegramId,
+			username: context.from?.username,
+			firstName: context.from?.firstName,
+			lastName: context.from?.lastName,
 		});
 
 		await db.insert(users).values({
-			telegramProfileId: telegramUser.id,
+			telegramProfileId: telegramId,
 		});
 	}
 
 	// Send welcome message and start registration process
-	await context.send(
+	await context.reply(
 		"Ciao e benvenuto nel nostro clan! 🎉\n\nPer poter accedere al nostro gruppo Telegram dovrai completare una breve registrazione.",
 		{
 			reply_markup: {
@@ -69,9 +64,6 @@ const start = async (context: MessageContext<Bot>) => {
 			},
 		},
 	);
-
-	// Set conversation state to wait for user's Clash tag
-	setConversation(telegramUser.id, undefined, ConversationState.WAITING_TAG);
 };
 
 /**
@@ -85,14 +77,30 @@ const start = async (context: MessageContext<Bot>) => {
  * @param message - The tag received from the user
  * @param context - The message context
  */
-const tagSent = async (message: string, context: MessageContext<Bot>) => {
+const tagSent = async (
+	message: string,
+	context: MessageContext<Bot>,
+	user: typeof users.$inferSelect | null | undefined,
+	userClashProfile: typeof clashProfiles.$inferSelect | null | undefined,
+	userTelegramProfile: typeof telegramProfiles.$inferSelect | null | undefined,
+) => {
 	const id = getTelegramUserId(context);
 
 	// Validate tag format using regex
 	const tagRegex = /^#[A-Z0-9]{6,10}$/;
 	if (!tagRegex.test(message)) {
-		await context.send(
-			`Il tag "${message}" non è valido. Un tag valido deve:\n- Iniziare con il simbolo #\n- Contenere solo lettere maiuscole e numeri\n- Avere una lunghezza compresa tra 6 e 10 caratteri\nEsempio di tag valido: #2POR98UYJ`,
+		await context.reply(
+			`Il tag "${message}" non è valido.\n\nUn tag valido deve:\n- Iniziare con il simbolo #\n- Contenere solo lettere maiuscole e numeri\nEsempio di tag valido: #2P0R98UYJ`,
+		);
+		return;
+	}
+
+	const alreadyRegistered = await checkClashProfileExists(message);
+
+	// Check if user already exists in database
+	if (alreadyRegistered) {
+		await context.reply(
+			`${alreadyRegistered.name} (${alreadyRegistered.tag}) è già registrato come membro del nostro clan! Riprova con un altro tag.`,
 		);
 		return;
 	}
@@ -100,7 +108,7 @@ const tagSent = async (message: string, context: MessageContext<Bot>) => {
 	// Verify player exists in Clash of Clans API
 	const player = await cocApiService.getPlayer(message);
 	if (!player || player.tag !== message) {
-		await context.send(
+		await context.reply(
 			`Non è stato possibile trovare un giocatore con il tag "${message}".\nVerifica di aver inserito correttamente il tag e riprova.`,
 		);
 		return;
@@ -108,7 +116,7 @@ const tagSent = async (message: string, context: MessageContext<Bot>) => {
 
 	// Verify player is in our clan
 	if (!player.clan || player.clan.tag !== config.COC_CLAN_TAG) {
-		await context.send(
+		await context.reply(
 			`Il giocatore con tag "${message}" non è membro del nostro clan.\nPer completare la registrazione devi essere membro del nostro clan.`,
 		);
 		return;
@@ -116,7 +124,7 @@ const tagSent = async (message: string, context: MessageContext<Bot>) => {
 
 	// Proceed to API token step
 	await context.react("👍");
-	await context.send(
+	await context.reply(
 		format`Ora servirebbe che mi indicassi il tuo API Token, lo puoi trovare nella sezione ${italic`Impostazioni`} e poi ${italic`Altre impostazioni`} del tuo profilo di Clash of Clans.`,
 		{
 			reply_markup: {
@@ -140,24 +148,25 @@ const tagSent = async (message: string, context: MessageContext<Bot>) => {
  * @param message - The API token received from the user
  * @param context - The message context
  */
-const apiTokenSent = async (message: string, context: MessageContext<Bot>) => {
+const apiTokenSent = async (
+	message: string,
+	context: MessageContext<Bot>,
+	user: typeof users.$inferSelect | null | undefined,
+	userClashProfile: typeof clashProfiles.$inferSelect | null | undefined,
+	userTelegramProfile: typeof telegramProfiles.$inferSelect | null | undefined,
+) => {
 	const id = getTelegramUserId(context);
 
 	// Validate token format
 	if (message.length !== 8) {
-		await context.send(
+		await context.reply(
 			`Il token "${message}" non è valido. Un token valido deve:\n- Essere esattamente di 8 caratteri\n- Contenere solo lettere e numeri\nVerifica di aver copiato correttamente il token e riprova.`,
 		);
 		return;
 	}
 
-	// Verify user exists in database
-	const user = await db.query.users.findFirst({
-		where: eq(users.telegramProfileId, id),
-	});
-
 	if (!user) {
-		await context.send(
+		await context.reply(
 			"Errore critico: il tuo profilo utente non è stato trovato nel database.\n" +
 				"Questo potrebbe essere dovuto a a un problema temporaneo del sistema.\n" +
 				"Per favore riprova più tardi.",
@@ -168,7 +177,7 @@ const apiTokenSent = async (message: string, context: MessageContext<Bot>) => {
 	// Get current conversation state
 	const conversation = getConversation(id);
 	if (!conversation || !conversation.tag) {
-		await context.send(
+		await context.reply(
 			"Errore di sistema: i dati della conversazione non sono stati trovati.\n" +
 				"Questo potrebbe essere dovuto a un timeout della sessione.\n" +
 				"Per favore riavvia la procedura di registrazione usando il comando /start.",
@@ -183,18 +192,17 @@ const apiTokenSent = async (message: string, context: MessageContext<Bot>) => {
 	);
 
 	if (!tokenValid) {
-		await context.send(
-			`Il token "${message}" non è valido per il tag ${conversation.tag}.\nVerifica di aver copiato correttamente il token dal gioco e riprova.\nAssicurati di usare il token associato al tuo account Clash of Clans.`,
+		await context.reply(
+			`Il token "${message}" non è valido per il tag ${conversation.tag}.\n\nVerifica di aver copiato correttamente il token dal gioco e riprova.\nAssicurati di usare il token associato al tuo account Clash of Clans.`,
 		);
 		return;
 	}
 
 	// Get player data from API
 	const player = await cocApiService.getPlayer(conversation.tag);
-	console.log("Player:", player);
 
 	if (!player) {
-		await context.send(
+		await context.reply(
 			"Errore di sistema: impossibile recuperare i dati del giocatore.\n" +
 				"Questo potrebbe essere dovuto a un problema temporaneo con i server di Clash of Clans.\n" +
 				"Per favore riprova più tardi.",
@@ -204,7 +212,7 @@ const apiTokenSent = async (message: string, context: MessageContext<Bot>) => {
 
 	// Verify player is still in our clan
 	if (!player.clan || player.clan.tag !== config.COC_CLAN_TAG) {
-		await context.send(
+		await context.reply(
 			"Errore di sistema: impossibile verificare l'appartenenza al clan.\n" +
 				"Assicurati di essere ancora membro del nostro clan e riprova.",
 		);
@@ -214,9 +222,9 @@ const apiTokenSent = async (message: string, context: MessageContext<Bot>) => {
 	// Get clan data from API
 	const clan = await cocApiService.getClan(player.clan.tag);
 	if (!clan) {
-		await context.send(
+		await context.reply(
 			"Errore di sistema: impossibile recuperare i dati del clan.\n" +
-				"Questo potrebbe essere dovuto a un problema temporaneo con i server de Clash of Clans.\n" +
+				"Questo potrebbe essere dovuto a un problema temporaneo con i server di Clash of Clans.\n" +
 				"Per favore riprova più tardi.",
 		);
 		return;
@@ -228,7 +236,7 @@ const apiTokenSent = async (message: string, context: MessageContext<Bot>) => {
 	);
 
 	if (!foundInClan) {
-		await context.send(
+		await context.reply(
 			"Errore di sistema: impossibile determinare il tuo ruolo nel clan.\n" +
 				"Assicurati di essere ancora membro del clan e riprova.",
 		);
@@ -238,7 +246,12 @@ const apiTokenSent = async (message: string, context: MessageContext<Bot>) => {
 	await db.insert(clashProfiles).values({
 		tag: conversation.tag,
 		name: player.name,
-		role: roleToEnum(foundInClan.role),
+		role: roleToEnum(foundInClan.role) as
+			| "leader"
+			| "coleader"
+			| "elder"
+			| "member"
+			| "none",
 	});
 
 	await db
@@ -251,7 +264,7 @@ const apiTokenSent = async (message: string, context: MessageContext<Bot>) => {
 	clearConversation(id);
 
 	await context.react("🎉");
-	await context.send(
+	await context.reply(
 		"Registrazione completata!\nSei stato registrato come membro del clan.",
 	);
 
@@ -261,4 +274,4 @@ const apiTokenSent = async (message: string, context: MessageContext<Bot>) => {
 	);
 };
 
-export { start, tagSent, apiTokenSent };
+export { startCommand, tagSent, apiTokenSent };

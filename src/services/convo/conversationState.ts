@@ -26,7 +26,7 @@ interface Conversation {
  * Key: User ID (number)
  * Value: Conversation object
  */
-const conversations = new Map<number, Conversation>();
+const conversations = new Map<bigint, Conversation>();
 
 /**
  * Gets the conversation state for a user.
@@ -34,7 +34,7 @@ const conversations = new Map<number, Conversation>();
  * @param userId - The ID of the user to get the conversation for
  * @returns The conversation object if it exists, undefined otherwise
  */
-const getConversation = (userId: number) => {
+const getConversation = (userId: bigint) => {
 	return conversations.get(userId);
 };
 
@@ -46,7 +46,7 @@ const getConversation = (userId: number) => {
  * @param state - The new state to set for the conversation
  */
 const setConversation = (
-	userId: number,
+	userId: bigint,
 	tag: string | undefined,
 	state: ConversationState,
 ) => {
@@ -59,7 +59,7 @@ const setConversation = (
  *
  * @param userId - The ID of the user to clear the conversation for
  */
-const clearConversation = (userId: number) => {
+const clearConversation = (userId: bigint) => {
 	conversations.delete(userId);
 };
 

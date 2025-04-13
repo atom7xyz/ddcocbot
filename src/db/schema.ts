@@ -12,10 +12,11 @@ import {
 
 export const users = pgTable("users", {
 	id: serial("id").primaryKey(),
-	telegramProfileId: integer("telegram_profile_id").references(
-		() => telegramProfiles.id,
-		{ onDelete: "cascade" },
-	),
+
+	telegramProfileId: bigint("telegram_profile_id", {
+		mode: "bigint",
+	}).references(() => telegramProfiles.id, { onDelete: "cascade" }),
+
 	clashProfileTag: varchar("clash_profile_tag").references(
 		() => clashProfiles.tag,
 		{ onDelete: "cascade" },
@@ -23,7 +24,7 @@ export const users = pgTable("users", {
 });
 
 export const telegramProfiles = pgTable("telegram_profiles", {
-	id: bigint("id", { mode: "number" }).primaryKey(),
+	id: bigint("id", { mode: "bigint" }).primaryKey(),
 	username: varchar("username", { length: 255 }).default(""),
 	firstName: varchar("first_name", { length: 255 }).default(""),
 	lastName: varchar("last_name", { length: 255 }).default(""),

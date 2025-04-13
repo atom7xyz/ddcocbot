@@ -28,9 +28,9 @@ const main = async () => {
 		console.log("Seeding database...");
 
 		// Clear all tables
-		await db.delete(schema.telegramProfiles);
-		await db.delete(schema.clashProfiles);
-		await db.delete(schema.users);
+		// await db.delete(schema.telegramProfiles);
+		// await db.delete(schema.clashProfiles);
+		// await db.delete(schema.users);
 
 		console.log("Database seeded successfully");
 	} catch (error) {
@@ -48,6 +48,7 @@ export enum Role {
 	LEADER = "leader",
 	COLEADER = "coleader",
 	ELDER = "elder",
+	ADMIN = "admin", // still elder (coc api shenaningans)
 	MEMBER = "member",
 	NONE = "none",
 }
@@ -68,6 +69,10 @@ export function roleToEnum(role: string | undefined): Role {
 	const found = schema.roleEnum.enumValues.find(
 		(value) => value === lowerCaseRole,
 	);
+
+	if (role === "admin") {
+		return Role.ELDER;
+	}
 
 	if (!found) {
 		throw new Error(`Invalid role: ${role}`);
@@ -92,6 +97,10 @@ export function enumToRole(role: Role | undefined): string {
 	const found = schema.roleEnum.enumValues.find(
 		(value) => value === lowerCaseRole,
 	);
+
+	if (role === Role.ADMIN) {
+		return "elder";
+	}
 
 	if (!found) {
 		throw new Error(`Invalid role: ${role}`);

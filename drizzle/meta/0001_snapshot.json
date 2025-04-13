@@ -1,6 +1,6 @@
 {
-  "id": "9fb38dbf-29fe-42a5-9c12-ec75462a3640",
-  "prevId": "00000000-0000-0000-0000-000000000000",
+  "id": "ebb67554-1dd5-476b-b051-099f33921479",
+  "prevId": "9fb38dbf-29fe-42a5-9c12-ec75462a3640",
   "version": "7",
   "dialect": "postgresql",
   "tables": {
@@ -102,7 +102,7 @@
         },
         "telegram_profile_id": {
           "name": "telegram_profile_id",
-          "type": "integer",
+          "type": "bigint",
           "primaryKey": false,
           "notNull": false
         },
