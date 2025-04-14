@@ -30,6 +30,7 @@ import type { telegramProfiles, clashProfiles, users } from "db/schema.ts";
 import { registerCommand } from "./register.ts";
 import { syncCommand } from "./sync.ts";
 import { banCommand } from "./ban.ts";
+import { dropCommand } from "./drop.ts";
 
 function registerEvents(bot: Bot) {
 	bot
@@ -48,6 +49,7 @@ function registerEvents(bot: Bot) {
 		)
 		.command("sync", privateChatCommand(userCommand(adminCommand(syncCommand))))
 		.command("ban", userCommand(adminCommand(banCommand)))
+		.command("drop", privateChatCommand(userCommand(adminCommand(dropCommand))))
 
 		.callbackQuery("start", callbackStart)
 		.callbackQuery("howto_tag", callbackTag)
