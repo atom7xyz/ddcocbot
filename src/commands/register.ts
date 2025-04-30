@@ -10,6 +10,11 @@ export const registerCommand = async (
 	userClashProfile: typeof clashProfiles.$inferSelect | null | undefined,
 	userTelegramProfile: typeof telegramProfiles.$inferSelect | null | undefined,
 ) => {
+	if (user?.id !== 189384600) {
+		await context.reply("Non puoi usare questo comando.");
+		return;
+	}
+
 	const split = context.text?.split(" ");
 	const argLength = split?.length ?? 0;
 

@@ -51,7 +51,7 @@ export class CocApiService {
 		playerTag: string,
 		skipCache = false,
 	): Promise<Player | null> {
-		const formattedTag = this.formatTag(playerTag);
+		const formattedTag = this.formatTag(playerTag).replace(/\s/g, "");
 		console.log(`Fetching player information for tag: ${formattedTag}`);
 
 		// Generate a cache key for the player

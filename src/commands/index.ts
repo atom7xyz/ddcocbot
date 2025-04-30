@@ -154,7 +154,7 @@ function privateChatCommand(
 			}
 
 			await context.reply(
-				"Questo comando funziona solo in chat privata. Clicca sul pulsante qui sotto per iniziare la registrazione.",
+				"Questo comando funziona solo in chat privata. Clicca sul pulsante qui sotto.",
 				{
 					reply_markup: {
 						inline_keyboard: onlyPrivateChatKeyboard(context),
