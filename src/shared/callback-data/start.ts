@@ -1,3 +1,5 @@
+import { db } from "db";
+import { pollVotes } from "db/schema";
 import { format, italic, MediaUpload, type Bot } from "gramio";
 import type { CallbackQueryShorthandContext } from "gramio";
 import { setConversation } from "services/convo/conversationState";
@@ -106,4 +108,28 @@ const callbackApiToken = async (
 	);
 };
 
-export { callbackStart, callbackTag, callbackApiToken };
+/**
+ * Handles the poll vote callback query from the user.
+ *
+ * This function:
+ * 1. Acknowledges the callback query with a thumbs up emoji
+ * 2. Sends a message asking for the user's vote
+ * 3. Sends a poll to the user
+ *
+ * @param context - The callback query context containing user and message data
+ */
+const callbackPollVote = async (
+	context: CallbackQueryShorthandContext<Bot, "poll_vote">,
+) => {
+	await db.insert(pollVotes).values({
+		pollId: BigInt(context.queryData),
+		userId: BigInt(context.from.id),
+	});
+
+	await context.answerCallbackQuery({
+		text: "👍",
+		show_alert: false,
+	});
+};
+
+export { callbackStart, callbackTag, callbackApiToken, callbackPollVote };

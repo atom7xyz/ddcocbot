@@ -20,7 +20,7 @@ Utenti Registrati:
 ${users
 	.map(
 		(user) =>
-			`• ${user.clashName} - [${user.telegramUsername}](tg://user?id=${user.telegramId}) ${user.presentInGroup ? "" : "(non presente nel gruppo)"}`,
+			`• ${user.clashName} - [${user.telegramUsername}](tg://user?id=${user.telegramId})}`,
 	)
 	.join("\n")}
 `;
@@ -63,6 +63,14 @@ const usersCommand = async (
 		const username =
 			groupMembers?.user.username ?? firstName ?? lastName ?? "sconosciuto";
 
+		const isPresentInGroup =
+			!!groupMembers &&
+			["member", "administrator", "creator"].includes(groupMembers.status);
+
+		if (!isPresentInGroup) {
+			continue;
+		}
+
 		normalizedListOfUsers.push({
 			telegramId: user.telegramProfile.id,
 			telegramUsername: username,
@@ -70,9 +78,7 @@ const usersCommand = async (
 			telegramLastName: lastName ?? "????",
 			clashName: user.clashProfile?.name ?? "????",
 			clashTag: user.clashProfile?.tag ?? "????",
-			presentInGroup:
-				!!groupMembers &&
-				["member", "administrator", "creator"].includes(groupMembers.status),
+			presentInGroup: isPresentInGroup,
 		});
 	}
 

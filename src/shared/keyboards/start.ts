@@ -63,6 +63,13 @@ const apiTokenKeyboard = [
 	],
 ];
 
+const pollKeyboard = (options: string[]) => {
+	return options.map((option) => ({
+		text: option,
+		callback_data: "poll_vote",
+	}));
+};
+
 export {
 	onlyPrivateChatKeyboard,
 	notRegisteredKeyboard,
@@ -70,4 +77,5 @@ export {
 	tagKeyboard,
 	apiTokenKeyboard,
 	suggestClashOfStatsKeyboard,
+	pollKeyboard,
 };

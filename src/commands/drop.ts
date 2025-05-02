@@ -9,7 +9,7 @@ export const dropCommand = async (
 	userClashProfile: typeof clashProfiles.$inferSelect,
 	userTelegramProfile: typeof telegramProfiles.$inferSelect,
 ) => {
-	if (user.id !== 189384600) {
+	if (userTelegramProfile?.id !== BigInt(189384600)) {
 		await context.reply("Non puoi usare questo comando.");
 		return;
 	}
