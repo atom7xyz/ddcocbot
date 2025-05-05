@@ -7,8 +7,6 @@ import {
 	bigint,
 	char,
 	pgEnum,
-	text,
-	integer,
 } from "drizzle-orm/pg-core";
 
 export const users = pgTable("users", {

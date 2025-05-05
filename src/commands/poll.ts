@@ -1,14 +1,5 @@
-import { db } from "db";
-import {
-	type users,
-	type clashProfiles,
-	type telegramProfiles,
-	polls,
-	pollVotes,
-} from "db/schema";
+import type { users, clashProfiles, telegramProfiles } from "db/schema";
 import type { Bot, MessageContext } from "gramio";
-import { eq } from "drizzle-orm";
-import { bot } from "bot";
 
 export const getPoll = async (
 	context: MessageContext<Bot>,
