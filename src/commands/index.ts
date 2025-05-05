@@ -31,7 +31,7 @@ import { registerCommand } from "./register.ts";
 import { syncCommand } from "./sync.ts";
 import { banCommand } from "./ban.ts";
 import { dropCommand } from "./drop.ts";
-import { getPoll, pollCommand } from "./poll.ts";
+import { getPoll } from "./poll.ts";
 
 function registerEvents(bot: Bot) {
 	bot
@@ -51,8 +51,7 @@ function registerEvents(bot: Bot) {
 		.command("sync", privateChatCommand(userCommand(adminCommand(syncCommand))))
 		.command("ban", userCommand(adminCommand(banCommand)))
 		.command("drop", privateChatCommand(userCommand(adminCommand(dropCommand))))
-		.command("poll", userCommand(adminCommand(pollCommand)))
-		.command("getpoll", userCommand(adminCommand(getPoll)))
+		.command("result", userCommand(adminCommand(getPoll)))
 
 		.callbackQuery("start", callbackStart)
 		.callbackQuery("howto_tag", callbackTag)

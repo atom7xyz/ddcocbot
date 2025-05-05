@@ -20,7 +20,7 @@ Utenti Registrati:
 ${users
 	.map(
 		(user) =>
-			`• ${user.clashName} - [${user.telegramUsername}](tg://user?id=${user.telegramId})}`,
+			`• ${user.clashName} - [${user.telegramUsername}](tg://user?id=${user.telegramId})`,
 	)
 	.join("\n")}
 `;

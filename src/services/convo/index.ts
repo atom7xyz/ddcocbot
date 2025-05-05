@@ -6,6 +6,8 @@ import type {
 	LeftChatMemberContext,
 	MessageContext,
 	NewChatMembersContext,
+	PollAnswerContext,
+	PollContext,
 } from "gramio";
 import {
 	ConversationState,
@@ -14,6 +16,7 @@ import {
 import { type clashProfiles, type telegramProfiles, users } from "db/schema.ts";
 import { db } from "db/index.ts";
 import { eq } from "drizzle-orm";
+import { bot } from "bot.ts";
 
 /**
  * Handles the conversation state for a user by processing incoming messages
@@ -138,21 +141,27 @@ const leftChatMemberHandler = async (context: LeftChatMemberContext<Bot>) => {
 		return;
 	}
 
-	if (leftChatMember) {
-		const user = await db.query.users.findFirst({
-			where: eq(users.telegramProfileId, BigInt(leftChatMember.id)),
-			with: {
-				clashProfile: true,
-			},
-		});
+	const user = await db.query.users.findFirst({
+		where: eq(users.telegramProfileId, BigInt(leftChatMember.id)),
+		with: {
+			clashProfile: true,
+		},
+	});
 
-		if (!user) {
-			return;
-		}
+	if (!user) {
+		return;
+	}
 
-		await context.reply(
-			`${leftChatMember.firstName} (${user.clashProfile?.name}) ha lasciato il gruppo.`,
-		);
+	await context.reply(
+		`${leftChatMember.firstName} (${user.clashProfile?.name}) ha lasciato il gruppo.`,
+	);
+	return;
+};
+
+const pollVoteHandler = async (context: PollContext<Bot>) => {
+	const poll = context.payload;
+
+	if (!poll || !context.isClosed()) {
 		return;
 	}
 };

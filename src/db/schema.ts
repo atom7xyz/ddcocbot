@@ -58,29 +58,9 @@ export const usersRelations = relations(users, ({ one }) => ({
 	}),
 }));
 
-export const polls = pgTable("polls", {
-	id: serial("id").primaryKey(),
-	question: varchar("question", { length: 255 }).notNull(),
-	options: text("options").array(),
-	createdAt: timestamp("created_at").notNull().defaultNow(),
-});
-
-export const pollVotes = pgTable("poll_votes", {
-	id: serial("id").primaryKey(),
-	pollId: bigint("poll_id", { mode: "bigint" }).references(() => polls.id, {
-		onDelete: "cascade",
-	}),
-	userId: bigint("user_id", { mode: "bigint" }).references(() => users.id, {
-		onDelete: "cascade",
-	}),
-	optionIndex: integer("option_index"),
-});
-
 export const schema = {
 	telegramProfiles,
 	users,
 	clashProfiles,
 	roleEnum,
-	polls,
-	pollVotes,
 };
