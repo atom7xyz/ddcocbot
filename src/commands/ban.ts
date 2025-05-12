@@ -42,11 +42,11 @@ export const banCommand = async (
 
 	const chatMember = await telegramApiService.getChatMember(
 		Number(config.GROUP_ID),
-		Number(userTelegramProfile.id),
+		Number(target.telegramProfile.id),
 	);
 
 	if (!chatMember) {
-		await context.reply(`${userTelegramProfile.id} non trovato`);
+		await context.reply(`${target.telegramProfile.id} non trovato`);
 		return;
 	}
 
@@ -61,6 +61,6 @@ export const banCommand = async (
 	});
 
 	await context.reply(
-		`${target.telegramProfile.firstName} (${target.clashProfile.name}) è stato bannato dal gruppo.`,
+		`${target.telegramProfile.firstName} (${target.clashProfile.name}) è stato rimosso dal gruppo.`,
 	);
 };
