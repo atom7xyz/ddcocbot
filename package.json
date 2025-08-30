@@ -13,7 +13,7 @@
 	},
 	"dependencies": {
 		"@gramio/auto-retry": "^0.0.3",
-		"@gramio/prompt": "^1.2.1",
+		"@gramio/prompt": "^1.2.0",
 		"@verrou/core": "^0.5.1",
 		"cacheables": "^2.0.0",
 		"drizzle-orm": "^0.41.0",
