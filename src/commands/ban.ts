@@ -15,7 +15,7 @@ export const banCommand = async (
 	const split = context.text?.split(" ");
 	const argsLength = split?.length ?? 0;
 
-	if (!split || argsLength < 2) {
+	if (!split || argsLength !== 2) {
 		await context.reply("Utilizzo: /ban <tag>");
 		return;
 	}

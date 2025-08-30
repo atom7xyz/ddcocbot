@@ -32,7 +32,7 @@ const usersCommand = async (
 	userTelegramProfile: typeof telegramProfiles.$inferSelect,
 ) => {
 	const split = context.text?.split(" ");
-	const allMode = split != null && split.length === 2 && split[1] === "all";
+	const allMode = split != null && split[1] === "all";
 
 	const player = await cocApiService.getPlayer(userClashProfile.tag);
 	if (!player) {

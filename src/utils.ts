@@ -95,7 +95,7 @@ async function checkUserIsOwner(context: MessageContext<Bot>) {
  * @returns The Telegram user
  */
 function getTelegramUser(context: MessageContext<Bot>): User {
-	// biome-ignore lint/style/noNonNullAssertion: <explanation>
+	// biome-ignore lint/style/noNonNullAssertion: cannot be null
 	return context.from!;
 }
 

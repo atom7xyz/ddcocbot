@@ -33,6 +33,7 @@ import { syncCommand } from "./sync.ts";
 import { banCommand } from "./ban.ts";
 import { dropCommand } from "./drop.ts";
 import { getPoll } from "./poll.ts";
+import { dumpCommand } from "./dump.ts";
 
 function registerEvents(bot: Bot) {
 	bot
@@ -53,6 +54,7 @@ function registerEvents(bot: Bot) {
 		.command("ban", userCommand(adminCommand(banCommand)))
 		.command("drop", privateChatCommand(userCommand(ownerCommand(dropCommand))))
 		.command("result", userCommand(ownerCommand(getPoll)))
+		.command("dump", privateChatCommand(userCommand(ownerCommand(dumpCommand))))
 
 		.callbackQuery("start", callbackStart)
 		.callbackQuery("howto_tag", callbackTag)
