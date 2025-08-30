@@ -32,15 +32,16 @@ const playerCommand = async (
 		return;
 	}
 
-	await getInfoFromName(context, tag);
+	await getInfoFromName(context, tag, userClashProfile);
 };
 
 const getInfoFromName = async (
 	context: MessageContext<Bot>,
 	name: string | undefined,
+	userClashProfile: typeof clashProfiles.$inferSelect,
 ) => {
 	if (!name) {
-		await context.reply("Per favore, fornisci un nome giocatore valido.");
+		getInfoFromName(context, userClashProfile.name, userClashProfile);
 		return;
 	}
 
