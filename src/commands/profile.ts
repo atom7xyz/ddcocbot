@@ -1,8 +1,10 @@
 import type { Bot, MessageContext } from "gramio";
 import { cocApiService } from "services/api";
 import type { Player } from "services/api/models/cocModels";
-import type { clashProfiles, telegramProfiles, users } from "db/schema";
+import { clashProfiles, type telegramProfiles, type users } from "db/schema";
 import { suggestClashOfStatsKeyboard } from "shared/keyboards";
+import { db } from "db";
+import { eq } from "drizzle-orm";
 
 const playerMessage = (player: Player) => `
 Informazioni Giocatore
@@ -23,14 +25,48 @@ const playerCommand = async (
 	userTelegramProfile: typeof telegramProfiles.$inferSelect,
 ) => {
 	const split = context.text?.split(" ");
-	const argLength = split?.length ?? 0;
+	const tag = split != null ? split[1] : userClashProfile.tag;
 
-	if (split && argLength > 1) {
-		await getInfoFromTag(context, split[1]);
+	if (tag?.startsWith("#")) {
+		await getInfoFromTag(context, tag);
 		return;
 	}
 
-	await getInfoFromTag(context, userClashProfile.tag);
+	await getInfoFromName(context, tag);
+};
+
+const getInfoFromName = async (
+	context: MessageContext<Bot>,
+	name: string | undefined,
+) => {
+	if (!name) {
+		await context.reply("Per favore, fornisci un nome giocatore valido.");
+		return;
+	}
+
+	const clashProfile = await db.query.clashProfiles.findFirst({
+		where: eq(clashProfiles.name, name),
+	});
+
+	if (!clashProfile) {
+		await context.reply("Per favore, fornisci un nome giocatore valido.");
+		return;
+	}
+
+	const player = await cocApiService.getPlayer(clashProfile.tag);
+	if (!player) {
+		await context.reply(
+			"Non è stato possibile recuperare le informazioni del giocatore. Per favore, riprova più tardi.",
+		);
+		return;
+	}
+
+	await context.reply(playerMessage(player), {
+		parse_mode: "Markdown",
+		reply_markup: {
+			inline_keyboard: suggestClashOfStatsKeyboard(player.name, player.tag),
+		},
+	});
 };
 
 const getInfoFromTag = async (
@@ -38,7 +74,7 @@ const getInfoFromTag = async (
 	tag: string | undefined,
 ) => {
 	if (!tag) {
-		await context.reply("Per favore, fornisci un tag di giocatore valido.");
+		await context.reply("Per favore, fornisci un tag giocatore valido.");
 		return;
 	}
 

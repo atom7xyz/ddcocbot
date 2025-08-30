@@ -13,18 +13,18 @@
 	},
 	"dependencies": {
 		"@gramio/auto-retry": "^0.0.3",
-		"@gramio/prompt": "^1.2.0",
+		"@gramio/prompt": "^1.2.1",
 		"@verrou/core": "^0.5.1",
 		"cacheables": "^2.0.0",
 		"drizzle-orm": "^0.41.0",
 		"env-var": "^7.5.0",
 		"gramio": "^0.2.6",
-		"pg": "^8.16.0"
+		"pg": "^8.16.3"
 	},
 	"devDependencies": {
 		"@biomejs/biome": "^1.9.4",
-		"@types/bun": "^1.2.16",
+		"@types/bun": "^1.2.21",
 		"drizzle-kit": "^0.30.6",
-		"typescript": "^5.8.3"
+		"typescript": "^5.9.2"
 	}
 }

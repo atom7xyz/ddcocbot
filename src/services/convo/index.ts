@@ -6,7 +6,6 @@ import type {
 	LeftChatMemberContext,
 	MessageContext,
 	NewChatMembersContext,
-	PollAnswerContext,
 	PollContext,
 } from "gramio";
 import {
@@ -16,7 +15,6 @@ import {
 import { type clashProfiles, type telegramProfiles, users } from "db/schema.ts";
 import { db } from "db/index.ts";
 import { eq } from "drizzle-orm";
-import { bot } from "bot.ts";
 
 /**
  * Handles the conversation state for a user by processing incoming messages

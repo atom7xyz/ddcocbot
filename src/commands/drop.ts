@@ -18,14 +18,19 @@ export const dropCommand = async (
 	const argsLength = split?.length ?? 0;
 
 	if (!split || argsLength !== 2) {
-		await context.reply("Utilizzo: /drop <tag> o <id>");
+		await context.reply("Utilizzo: /drop <tag>");
 		return;
 	}
 
 	const tag = split[1];
 
+	if (!tag) {
+		await context.reply("Tag non valida!");
+		return;
+	}
+
 	const foundUser = await db.query.users.findFirst({
-		where: eq(users.id, Number(tag)),
+		where: eq(users.clashProfileTag, tag),
 	});
 
 	await context.send(

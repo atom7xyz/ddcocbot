@@ -21,6 +21,7 @@ import {
 	checkPrivateChat,
 	checkUserIsAdmin,
 	checkUserIsRegistered,
+	checkUserIsOwner,
 } from "utils.ts";
 import {
 	notRegisteredKeyboard,
@@ -46,12 +47,12 @@ function registerEvents(bot: Bot) {
 		)
 		.command(
 			"register",
-			privateChatCommand(userCommand(adminCommand(registerCommand))),
+			privateChatCommand(userCommand(ownerCommand(registerCommand))),
 		)
 		.command("sync", privateChatCommand(userCommand(adminCommand(syncCommand))))
 		.command("ban", userCommand(adminCommand(banCommand)))
-		.command("drop", privateChatCommand(userCommand(adminCommand(dropCommand))))
-		.command("result", userCommand(adminCommand(getPoll)))
+		.command("drop", privateChatCommand(userCommand(ownerCommand(dropCommand))))
+		.command("result", userCommand(ownerCommand(getPoll)))
 
 		.callbackQuery("start", callbackStart)
 		.callbackQuery("howto_tag", callbackTag)
@@ -126,6 +127,32 @@ function adminCommand(
 		const isAdmin = await checkUserIsAdmin(context);
 
 		if (!isAdmin) {
+			await context.reply("Non sei autorizzato a utilizzare questo comando.");
+			return;
+		}
+
+		await context.sendChatAction("typing");
+		return func(context, user, userClashProfile, userTelegramProfile);
+	};
+}
+
+function ownerCommand(
+	func: (
+		context: MessageContext<Bot>,
+		user: typeof users.$inferSelect,
+		userClashProfile: typeof clashProfiles.$inferSelect,
+		userTelegramProfile: typeof telegramProfiles.$inferSelect,
+	) => Promise<void>,
+) {
+	return async (
+		context: MessageContext<Bot>,
+		user: typeof users.$inferSelect,
+		userClashProfile: typeof clashProfiles.$inferSelect,
+		userTelegramProfile: typeof telegramProfiles.$inferSelect,
+	) => {
+		const isOwner = await checkUserIsOwner(context);
+
+		if (!isOwner) {
 			await context.reply("Non sei autorizzato a utilizzare questo comando.");
 			return;
 		}

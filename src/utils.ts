@@ -84,6 +84,10 @@ async function checkUserIsAdmin(context: MessageContext<Bot>) {
 	return isAdmin;
 }
 
+async function checkUserIsOwner(context: MessageContext<Bot>) {
+	return getTelegramUserId(context) === BigInt(189384600);
+}
+
 /**
  * Gets the Telegram user from the message context
  *
@@ -112,4 +116,5 @@ export {
 	checkUserIsRegistered,
 	getTelegramUser,
 	getTelegramUserId,
+	checkUserIsOwner,
 };
