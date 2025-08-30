@@ -9,11 +9,6 @@ export const dropCommand = async (
 	userClashProfile: typeof clashProfiles.$inferSelect,
 	userTelegramProfile: typeof telegramProfiles.$inferSelect,
 ) => {
-	if (userTelegramProfile?.id !== BigInt(189384600)) {
-		await context.reply("Non puoi usare questo comando.");
-		return;
-	}
-
 	const split = context.text?.split(" ");
 	const argsLength = split?.length ?? 0;
 
@@ -29,19 +24,10 @@ export const dropCommand = async (
 		return;
 	}
 
-	const foundUser = await db.query.users.findFirst({
-		where: eq(users.clashProfileTag, tag),
-	});
+	await context.send(`Eliminando i dati di ${tag}...`);
+	console.log(`Eliminando i dati di ${tag}...`);
 
-	await context.send(
-		`Eliminando i dati di:\n- Tag: ${foundUser?.clashProfileTag}\n- ID: ${foundUser?.id}\n- Telegram ID: ${foundUser?.telegramProfileId}`,
-	);
-
-	if (tag) {
-		await db.delete(users).where(eq(users.clashProfileTag, tag));
-	} else {
-		await db.delete(users).where(eq(users.id, Number(tag)));
-	}
+	await db.delete(users).where(eq(users.clashProfileTag, tag));
 
 	await context.react("😈");
 };

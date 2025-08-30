@@ -31,6 +31,9 @@ const usersCommand = async (
 	userClashProfile: typeof clashProfiles.$inferSelect,
 	userTelegramProfile: typeof telegramProfiles.$inferSelect,
 ) => {
+	const split = context.text?.split(" ");
+	const allMode = split != null && split.length === 2 && split[1] === "all";
+
 	const player = await cocApiService.getPlayer(userClashProfile.tag);
 	if (!player) {
 		await context.reply(
@@ -67,7 +70,7 @@ const usersCommand = async (
 			!!groupMembers &&
 			["member", "administrator", "creator"].includes(groupMembers.status);
 
-		if (!isPresentInGroup) {
+		if (!isPresentInGroup && !allMode) {
 			continue;
 		}
 
