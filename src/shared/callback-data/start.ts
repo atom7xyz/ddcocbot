@@ -16,30 +16,30 @@ import { tagKeyboard } from "shared/keyboards";
  * @param context - The callback query context containing user and message data
  */
 const callbackStart = async (
-	context: CallbackQueryShorthandContext<Bot, "start">,
+  context: CallbackQueryShorthandContext<Bot, "start">,
 ) => {
-	await context.answerCallbackQuery({
-		text: "👍",
-		show_alert: false,
-	});
+  await context.answerCallbackQuery({
+    text: "👍",
+    show_alert: false,
+  });
 
-	await context.sendChatAction("typing");
+  await context.sendChatAction("typing");
 
-	await context.send(
-		"Per prima cosa, servirebbe che mi indicassi il tuo TAG, lo puoi trovare nel tuo profilo di Clash of Clans (esempio: #2P0R98UYJ).",
-		{
-			reply_markup: {
-				inline_keyboard: tagKeyboard,
-			},
-		},
-	);
+  await context.send(
+    "Per prima cosa, servirebbe che mi indicassi il tuo TAG, lo puoi trovare nel tuo profilo di Clash of Clans (esempio: #2P0R98UYJ).",
+    {
+      reply_markup: {
+        inline_keyboard: tagKeyboard,
+      },
+    },
+  );
 
-	// Set conversation state to wait for user's Clash tag
-	setConversation(
-		BigInt(context.from.id),
-		undefined,
-		ConversationState.WAITING_TAG,
-	);
+  // Set conversation state to wait for user's Clash tag
+  setConversation(
+    BigInt(context.from.id),
+    undefined,
+    ConversationState.WAITING_TAG,
+  );
 };
 
 /**
@@ -53,22 +53,22 @@ const callbackStart = async (
  * @param context - The callback query context containing user and message data
  */
 const callbackTag = async (
-	context: CallbackQueryShorthandContext<Bot, "howto_tag">,
+  context: CallbackQueryShorthandContext<Bot, "howto_tag">,
 ) => {
-	await context.answerCallbackQuery({
-		text: "👍",
-		show_alert: false,
-	});
+  await context.answerCallbackQuery({
+    text: "👍",
+    show_alert: false,
+  });
 
-	await context.sendChatAction("upload_photo");
+  await context.sendChatAction("upload_photo");
 
-	await context.sendPhoto(
-		await MediaUpload.url("https://atom7.xyz/share/u/wRkIRlja.jpg"),
-		{
-			caption:
-				"Puoi trovare il tuo TAG nel tuo profilo di Clash of Clans, ad esempio: #2P0R98UYJ",
-		},
-	);
+  await context.sendPhoto(
+    await MediaUpload.url("https://atom7.xyz/share/u/P3qCUwVA.png"),
+    {
+      caption:
+        "Puoi trovare il tuo TAG nel tuo profilo di Clash of Clans, ad esempio: #2P0R98UYJ",
+    },
+  );
 };
 
 /**
@@ -82,28 +82,28 @@ const callbackTag = async (
  * @param context - The callback query context containing user and message data
  */
 const callbackApiToken = async (
-	context: CallbackQueryShorthandContext<Bot, "howto_api_token">,
+  context: CallbackQueryShorthandContext<Bot, "howto_api_token">,
 ) => {
-	await context.answerCallbackQuery({
-		text: "👍",
-		show_alert: false,
-	});
+  await context.answerCallbackQuery({
+    text: "👍",
+    show_alert: false,
+  });
 
-	await context.sendChatAction("upload_photo");
+  await context.sendChatAction("upload_photo");
 
-	await context.sendPhoto(
-		await MediaUpload.url("https://atom7.xyz/share/u/hBysYDH7.jpg"),
-		{
-			caption: format`Puoi trovare il tuo API Token nella sezione ${italic`Impostazioni`} e poi ${italic`Altre impostazioni`} di Clash of Clans.`,
-		},
-	);
+  await context.sendPhoto(
+    await MediaUpload.url("https://atom7.xyz/share/u/KNJKkhqu.png"),
+    {
+      caption: format`Puoi trovare il tuo API Token nella sezione ${italic`Impostazioni`} e poi ${italic`Altre impostazioni`} di Clash of Clans.`,
+    },
+  );
 
-	await context.sendPhoto(
-		await MediaUpload.url("https://atom7.xyz/share/u/kBXmaLqD.jpg"),
-		{
-			caption: format`Cliccando il bottone ${italic`Mostra`} e poi ${italic`Copia`} potrai ottenere il tuo API Token.`,
-		},
-	);
+  await context.sendPhoto(
+    await MediaUpload.url("https://atom7.xyz/share/u/O2Zd1jjJ.png"),
+    {
+      caption: format`Cliccando il bottone ${italic`Mostra`} e poi ${italic`Copia`} potrai ottenere il tuo API Token.`,
+    },
+  );
 };
 
 export { callbackStart, callbackTag, callbackApiToken };
