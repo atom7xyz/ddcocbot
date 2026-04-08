@@ -16,7 +16,7 @@
 		"@gramio/prompt": "^1.2.1",
 		"@verrou/core": "^0.5.1",
 		"cacheables": "^2.0.0",
-		"drizzle-orm": "^0.41.0",
+		"drizzle-orm": "^0.45.2",
 		"env-var": "^7.5.0",
 		"gramio": "^0.2.6",
 		"pg": "^8.16.3"
