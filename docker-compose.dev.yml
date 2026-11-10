@@ -1,19 +1,16 @@
 services:
-    postgres:
-        container_name: ddcocbot-postgres
-        image: postgres:alpine
-        restart: unless-stopped
-        environment:
-            - POSTGRES_USER=ddcocbot
-            - POSTGRES_PASSWORD=54f879079d2e4e852d83c727
-            - POSTGRES_DB=ddcocbot
-        ports:
-            - 5432:5432
-        volumes:
-            - postgres_data:/var/lib/postgresql/data
+  postgres:
+    container_name: ddcocbot-postgres
+    image: postgres:17-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ddcocbot
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}
+      POSTGRES_DB: ddcocbot
+    ports:
+      - 127.0.0.1:5432:5432
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
 volumes:
-    postgres_data:
-
-
-networks:
-    default: {}
+  postgres_data:

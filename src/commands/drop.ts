@@ -1,33 +1,29 @@
-import { db } from "db";
-import { type clashProfiles, type telegramProfiles, users } from "db/schema";
-import type { Bot, MessageContext } from "gramio";
-import { eq } from "drizzle-orm";
+import type { CommandCtx } from "../handlers/context.ts";
+import { splitArgs } from "../lib/args.ts";
+import { parseTag } from "../lib/tags.ts";
+import { deleteByTag } from "../services/users.ts";
 
-export const dropCommand = async (
-	context: MessageContext<Bot>,
-	user: typeof users.$inferSelect,
-	userClashProfile: typeof clashProfiles.$inferSelect,
-	userTelegramProfile: typeof telegramProfiles.$inferSelect,
-) => {
-	const split = context.text?.split(" ");
-	const argsLength = split?.length ?? 0;
-
-	if (!split || argsLength !== 2) {
-		await context.reply("Utilizzo: /drop <tag>");
-		return;
-	}
-
-	const tag = split[1];
+/**
+ * /drop #TAG — deletes the registration for a tag. Owner only.
+ * The Telegram profile stays, so the person can register again.
+ */
+export async function dropCommand(context: CommandCtx): Promise<void> {
+	const args = splitArgs(context.args);
+	const tag = args.length === 1 ? parseTag(args[0]) : null;
 
 	if (!tag) {
-		await context.reply("Tag non valida!");
+		await context.reply("Utilizzo: /drop #TAG");
 		return;
 	}
 
-	await context.send(`Eliminando i dati di ${tag}...`);
-	console.log(`Eliminando i dati di ${tag}...`);
+	const deleted = await deleteByTag(tag);
+	console.log(`Owner ${context.from.id} dropped ${tag} (deleted: ${deleted}).`);
 
-	await db.delete(users).where(eq(users.clashProfileTag, tag));
+	if (deleted === 0) {
+		await context.reply(`${tag} non trovato.`);
+		return;
+	}
 
+	await context.reply(`Dati di ${tag} eliminati.`);
 	await context.react("😈");
-};
+}

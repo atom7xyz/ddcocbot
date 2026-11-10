@@ -1,206 +1,39 @@
-export * from "./start.ts";
-
-import { startCommand } from "./start.ts";
-import { helpCommand } from "./help.ts";
-import { clanCommand } from "./clan.ts";
-import {
-	callbackStart,
-	callbackTag,
-	callbackApiToken,
-} from "shared/callback-data/index.ts";
-import {
-	chatHandler,
-	leftChatMemberHandler,
-	newChatMembersHandler,
-} from "services/convo";
-import { playerCommand } from "./profile.ts";
-import { membersCommand } from "./members.ts";
-import type { Bot, MessageContext } from "gramio";
-import { usersCommand } from "./users.ts";
-import {
-	checkPrivateChat,
-	checkUserIsAdmin,
-	checkUserIsRegistered,
-	checkUserIsOwner,
-} from "utils.ts";
-import {
-	notRegisteredKeyboard,
-	onlyPrivateChatKeyboard,
-} from "shared/keyboards/index.ts";
-import type { telegramProfiles, clashProfiles, users } from "db/schema.ts";
-import { registerCommand } from "./register.ts";
-import { syncCommand } from "./sync.ts";
+import type { Bot } from "gramio";
+import { adminsOnly, membersOnly, ownerOnly, privateOnly } from "../handlers/guards.ts";
+import { CallbackData } from "../keyboards.ts";
 import { banCommand } from "./ban.ts";
+import { clanCommand } from "./clan.ts";
 import { dropCommand } from "./drop.ts";
-import { getPoll } from "./poll.ts";
 import { dumpCommand } from "./dump.ts";
+import { leftChatMemberHandler, newChatMembersHandler } from "./groupEvents.ts";
+import { helpCommand } from "./help.ts";
+import { membersCommand } from "./members.ts";
+import { profileCommand } from "./profile.ts";
+import { registerCommand } from "./register.ts";
+import { conversationHandler, howtoApiTokenCallback, howtoTagCallback, startCallback, startCommand } from "./start.ts";
+import { syncCommand } from "./sync.ts";
+import { usersCommand } from "./users.ts";
 
-function registerEvents(bot: Bot) {
-	bot
-		.command("start", privateChatCommand(startCommand))
+/** Registers every handler. Call once, before `bot.start()`. */
+export function registerHandlers(bot: Bot): Bot {
+	return bot
+		.command("start", privateOnly(startCommand))
 		.command("help", helpCommand)
-		.command("clan", userCommand(clanCommand))
-		.command("profile", userCommand(playerCommand))
-		.command("members", userCommand(adminCommand(membersCommand)))
-		.command(
-			"users",
-			privateChatCommand(userCommand(adminCommand(usersCommand))),
-		)
-		.command(
-			"register",
-			privateChatCommand(userCommand(ownerCommand(registerCommand))),
-		)
-		.command("sync", privateChatCommand(userCommand(adminCommand(syncCommand))))
-		.command("ban", userCommand(adminCommand(banCommand)))
-		.command("drop", privateChatCommand(userCommand(ownerCommand(dropCommand))))
-		.command("result", userCommand(ownerCommand(getPoll)))
-		.command("dump", privateChatCommand(userCommand(ownerCommand(dumpCommand))))
+		.command("clan", membersOnly(clanCommand))
+		.command("profile", membersOnly(profileCommand))
+		.command("members", adminsOnly(membersCommand))
+		.command("users", privateOnly(adminsOnly(usersCommand)))
+		.command("sync", privateOnly(adminsOnly(syncCommand)))
+		.command("ban", adminsOnly(banCommand))
+		.command("register", privateOnly(ownerOnly(registerCommand)))
+		.command("drop", privateOnly(ownerOnly(dropCommand)))
+		.command("dump", privateOnly(ownerOnly(dumpCommand)))
 
-		.callbackQuery("start", callbackStart)
-		.callbackQuery("howto_tag", callbackTag)
-		.callbackQuery("howto_api_token", callbackApiToken)
-
-		.on("message", privateChatCommand(chatHandler, false))
+		.callbackQuery(CallbackData.start, startCallback)
+		.callbackQuery(CallbackData.howtoTag, howtoTagCallback)
+		.callbackQuery(CallbackData.howtoApiToken, howtoApiTokenCallback)
 
 		.on("new_chat_members", newChatMembersHandler)
-		.on("left_chat_member", leftChatMemberHandler);
+		.on("left_chat_member", leftChatMemberHandler)
+		.on("message", conversationHandler);
 }
-
-function userCommand(
-	func: (
-		context: MessageContext<Bot>,
-		user: typeof users.$inferSelect,
-		userClashProfile: typeof clashProfiles.$inferSelect,
-		userTelegramProfile: typeof telegramProfiles.$inferSelect,
-	) => Promise<void>,
-) {
-	return async (context: MessageContext<Bot>) => {
-		const user = await checkUserIsRegistered(context);
-
-		if (!user) {
-			await context.reply("Non sei registrato nel nostro sistema.", {
-				reply_markup: {
-					inline_keyboard: notRegisteredKeyboard,
-				},
-			});
-			return;
-		}
-
-		const userClashProfile = user.clashProfile;
-		const userTelegramProfile = user.telegramProfile;
-
-		if (!userClashProfile) {
-			await context.reply("Non hai un profilo Clash of Clans associato.", {
-				reply_markup: {
-					inline_keyboard: notRegisteredKeyboard,
-				},
-			});
-			return;
-		}
-
-		if (!userTelegramProfile) {
-			await context.reply("Non hai un profilo Telegram associato.", {
-				reply_markup: {
-					inline_keyboard: notRegisteredKeyboard,
-				},
-			});
-			return;
-		}
-
-		await context.sendChatAction("typing");
-		return func(context, user, userClashProfile, userTelegramProfile);
-	};
-}
-
-function adminCommand(
-	func: (
-		context: MessageContext<Bot>,
-		user: typeof users.$inferSelect,
-		userClashProfile: typeof clashProfiles.$inferSelect,
-		userTelegramProfile: typeof telegramProfiles.$inferSelect,
-	) => Promise<void>,
-) {
-	return async (
-		context: MessageContext<Bot>,
-		user: typeof users.$inferSelect,
-		userClashProfile: typeof clashProfiles.$inferSelect,
-		userTelegramProfile: typeof telegramProfiles.$inferSelect,
-	) => {
-		const isAdmin = await checkUserIsAdmin(context);
-
-		if (!isAdmin) {
-			await context.reply("Non sei autorizzato a utilizzare questo comando.");
-			return;
-		}
-
-		await context.sendChatAction("typing");
-		return func(context, user, userClashProfile, userTelegramProfile);
-	};
-}
-
-function ownerCommand(
-	func: (
-		context: MessageContext<Bot>,
-		user: typeof users.$inferSelect,
-		userClashProfile: typeof clashProfiles.$inferSelect,
-		userTelegramProfile: typeof telegramProfiles.$inferSelect,
-	) => Promise<void>,
-) {
-	return async (
-		context: MessageContext<Bot>,
-		user: typeof users.$inferSelect,
-		userClashProfile: typeof clashProfiles.$inferSelect,
-		userTelegramProfile: typeof telegramProfiles.$inferSelect,
-	) => {
-		const isOwner = await checkUserIsOwner(context);
-
-		if (!isOwner) {
-			await context.reply("Non sei autorizzato a utilizzare questo comando.");
-			return;
-		}
-
-		await context.sendChatAction("typing");
-		return func(context, user, userClashProfile, userTelegramProfile);
-	};
-}
-
-function privateChatCommand(
-	func: (
-		context: MessageContext<Bot>,
-		user: typeof users.$inferSelect | null | undefined,
-		userClashProfile: typeof clashProfiles.$inferSelect | null | undefined,
-		userTelegramProfile:
-			| typeof telegramProfiles.$inferSelect
-			| null
-			| undefined,
-	) => Promise<void>,
-	alert = true,
-) {
-	return async (context: MessageContext<Bot>) => {
-		const isPrivateChat = checkPrivateChat(context);
-
-		if (!isPrivateChat) {
-			if (!alert) {
-				return;
-			}
-
-			await context.reply(
-				"Questo comando funziona solo in chat privata. Clicca sul pulsante qui sotto.",
-				{
-					reply_markup: {
-						inline_keyboard: onlyPrivateChatKeyboard(context),
-					},
-				},
-			);
-			return;
-		}
-
-		const user = await checkUserIsRegistered(context);
-		const userClashProfile = user?.clashProfile;
-		const userTelegramProfile = user?.telegramProfile;
-
-		return func(context, user, userClashProfile, userTelegramProfile);
-	};
-}
-
-export { registerEvents };

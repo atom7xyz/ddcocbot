@@ -1,299 +1,99 @@
-import { config } from "../../config";
-import { CocApiErrorHandler } from "./cocApiErrorHandler";
-import type {
-	Player,
-	Clan,
-	TokenVerificationResponse,
-} from "./models/cocModels";
-import { Cacheables } from "cacheables";
+import { config } from "../../config.ts";
+import { normalizeTag } from "../../lib/tags.ts";
+import { TtlCache } from "../../lib/ttlCache.ts";
+import { CocApiError, toCocApiError } from "./cocApiErrorHandler.ts";
+import type { Clan, Player, TokenVerificationResponse } from "./models/cocModels.ts";
 
-/**
- * Service class for interacting with the Clash of Clans API
- * Handles API requests, caching, and error handling
- */
+const CACHE_TTL_MS = 5 * 60 * 1000;
+const REQUEST_TIMEOUT_MS = 10_000;
+
+/** Client for the Clash of Clans API with a short-lived response cache. */
 export class CocApiService {
-	// API base URL from config
-	private readonly apiUrl: string;
-	// API authentication token from config
-	private readonly apiToken: string;
-	// Error handler instance for API errors
-	private readonly errorHandler: CocApiErrorHandler;
+	readonly #baseUrl: string;
+	readonly #token: string;
+	readonly #players = new TtlCache<Player | null>(CACHE_TTL_MS);
+	readonly #clans = new TtlCache<Clan | null>(CACHE_TTL_MS);
 
-	// Cache instance for storing API responses
-	private cache: Cacheables;
-	// Default cache time-to-live (5 minutes)
-	private readonly DEFAULT_TTL = 5 * 60 * 1000; // 5 minutes in milliseconds
-
-	/**
-	 * Constructs a new CocApiService instance
-	 * Initializes API configuration and cache
-	 */
-	constructor() {
-		this.apiUrl = config.COC_API.URL;
-		this.apiToken = config.COC_API.TOKEN;
-		this.errorHandler = new CocApiErrorHandler();
-
-		// Initialize cache with logging enabled
-		this.cache = new Cacheables({
-			logTiming: false,
-			log: false,
-		});
+	constructor(baseUrl: string, token: string) {
+		this.#baseUrl = baseUrl.replace(/\/+$/, "");
+		this.#token = token;
 	}
 
 	/**
-	 * Get player information by player tag
-	 *
-	 * @param playerTag The player tag
-	 * @param skipCache Optional: Skip cache and force a fresh API request
-	 * @returns The player information or null if not found
+	 * @returns The player, or `null` when the tag does not exist or the API fails.
 	 */
-	async getPlayer(
-		playerTag: string,
-		skipCache = false,
-	): Promise<Player | null> {
-		const formattedTag = this.formatTag(playerTag).replace(/\s/g, "");
-		console.log(`Fetching player information for tag: ${formattedTag}`);
-
-		// Generate a cache key for the player
-		const cacheKey = Cacheables.key("player", formattedTag);
-
-		// Skip cache if requested
-		if (skipCache && this.cache.isCached(cacheKey)) {
-			this.cache.delete(cacheKey);
-		}
-
-		try {
-			return await this.cache.cacheable(
-				async () => {
-					console.log(`Fetching fresh player data for tag: ${formattedTag}`);
-
-					const response = await fetch(
-						`${this.apiUrl}/players/${encodeURIComponent(formattedTag)}`,
-						{
-							headers: {
-								Authorization: `Bearer ${this.apiToken}`,
-								Accept: "application/json",
-							},
-						},
-					);
-
-					if (!response.ok) {
-						if (response.status === 404) {
-							console.log(`Player with tag ${formattedTag} not found`);
-							return null;
-						}
-
-						return await this.errorHandler.handleError(
-							response,
-							response.status,
-						);
-					}
-
-					return (await response.json()) as Player;
-				},
-				cacheKey,
-				{
-					cachePolicy: "max-age",
-					maxAge: this.DEFAULT_TTL,
-				},
-			);
-		} catch (e) {
-			if (this.isNotFound(e)) {
-				console.log(`Player with tag ${formattedTag} not found`);
-			} else {
-				console.error(
-					`Error fetching player information: ${(e as Error).message}`,
-					e,
-				);
-			}
-			return null;
-		}
+	getPlayer(playerTag: string, fresh = false): Promise<Player | null> {
+		const tag = normalizeTag(playerTag);
+		return this.#players
+			.getOrLoad(tag, () => this.#get<Player>(`/players/${encodeURIComponent(tag)}`), fresh)
+			.catch((error: unknown) => this.#logAndNull("player", tag, error));
 	}
 
 	/**
-	 * Get clan information by clan tag
-	 *
-	 * @param clanTag The clan tag
-	 * @param skipCache Optional: Skip cache and force a fresh API request
-	 * @returns The clan information or null if not found
+	 * @returns The clan, or `null` when the tag does not exist or the API fails.
 	 */
-	async getClan(clanTag: string, skipCache = false): Promise<Clan | null> {
-		const formattedTag = this.formatTag(clanTag);
-		console.log(`Fetching clan information for tag: ${formattedTag}`);
-
-		// Generate a cache key for the clan
-		const cacheKey = Cacheables.key("clan", formattedTag);
-
-		// Skip cache if requested
-		if (skipCache && this.cache.isCached(cacheKey)) {
-			this.cache.delete(cacheKey);
-		}
-
-		try {
-			return await this.cache.cacheable(
-				async () => {
-					console.log(`Fetching fresh clan data for tag: ${formattedTag}`);
-
-					const response = await fetch(
-						`${this.apiUrl}/clans/${encodeURIComponent(formattedTag)}`,
-						{
-							headers: {
-								Authorization: `Bearer ${this.apiToken}`,
-								Accept: "application/json",
-							},
-						},
-					);
-
-					if (!response.ok) {
-						if (response.status === 404) {
-							console.log(`Clan with tag ${formattedTag} not found`);
-							return null;
-						}
-
-						return await this.errorHandler.handleError(
-							response,
-							response.status,
-						);
-					}
-
-					return (await response.json()) as Clan;
-				},
-				cacheKey,
-				{
-					cachePolicy: "max-age",
-					maxAge: this.DEFAULT_TTL,
-				},
-			);
-		} catch (e) {
-			if (this.isNotFound(e)) {
-				console.log(`Clan with tag ${formattedTag} not found`);
-			} else {
-				console.error(
-					`Error fetching clan information: ${(e as Error).message}`,
-					e,
-				);
-			}
-			return null;
-		}
+	getClan(clanTag: string, fresh = false): Promise<Clan | null> {
+		const tag = normalizeTag(clanTag);
+		return this.#clans
+			.getOrLoad(tag, () => this.#get<Clan>(`/clans/${encodeURIComponent(tag)}`), fresh)
+			.catch((error: unknown) => this.#logAndNull("clan", tag, error));
 	}
 
 	/**
-	 * Verify a player token
-	 *
-	 * @param playerTag The player tag
-	 * @param token The token to verify
-	 * @returns true if the token is valid, false otherwise
+	 * Checks the one-time API token that the player copies from the game settings.
+	 * This proves that the Telegram user controls the game account.
 	 */
 	async verifyPlayerToken(playerTag: string, token: string): Promise<boolean> {
-		const formattedTag = this.formatTag(playerTag);
-		console.log(`Verifying token for player: ${formattedTag}`);
+		const tag = normalizeTag(playerTag);
 
 		try {
-			const response = await fetch(
-				`${this.apiUrl}/players/${encodeURIComponent(formattedTag)}/verifytoken`,
-				{
-					method: "POST",
-					headers: {
-						Authorization: `Bearer ${this.apiToken}`,
-						"Content-Type": "application/json",
-						Accept: "application/json",
-					},
-					body: JSON.stringify({ token }),
-				},
-			);
-
-			if (!response.ok) {
-				await this.errorHandler.handleError(response, response.status);
-				return false;
+			const data = await this.#request<TokenVerificationResponse>(`/players/${encodeURIComponent(tag)}/verifytoken`, {
+				method: "POST",
+				body: JSON.stringify({ token }),
+			});
+			const ok = data?.status.toLowerCase() === "ok";
+			if (ok) {
+				this.#players.delete(tag);
 			}
-
-			const data = (await response.json()) as TokenVerificationResponse;
-			const result = data.status.toLowerCase() === "ok";
-
-			console.log(
-				`Token verification result for player ${formattedTag}: ${result}`,
-			);
-
-			// If verification was successful, invalidate the player's cache to ensure fresh data next time
-			if (result) {
-				this.invalidatePlayerCache(formattedTag);
-			}
-
-			return result;
-		} catch (e) {
-			console.error(`Error verifying player token: ${(e as Error).message}`, e);
+			return ok;
+		} catch (error) {
+			console.error(`Token verification failed for ${tag}:`, error);
 			return false;
 		}
 	}
 
-	/**
-	 * Invalidate a player's cache
-	 *
-	 * @param playerTag The player tag
-	 */
-	invalidatePlayerCache(playerTag: string): void {
-		const formattedTag = this.formatTag(playerTag);
-		const cacheKey = Cacheables.key("player", formattedTag);
+	#get<T>(path: string): Promise<T | null> {
+		return this.#request<T>(path, { method: "GET" });
+	}
 
-		if (this.cache.isCached(cacheKey)) {
-			this.cache.delete(cacheKey);
-			console.log(`Invalidated cache for player: ${formattedTag}`);
+	/** Performs a request. Resolves `null` on HTTP 404. Throws on other errors. */
+	async #request<T>(path: string, init: RequestInit): Promise<T | null> {
+		const response = await fetch(`${this.#baseUrl}${path}`, {
+			...init,
+			headers: {
+				Authorization: `Bearer ${this.#token}`,
+				Accept: "application/json",
+				...(init.body ? { "Content-Type": "application/json" } : {}),
+			},
+			signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
+		});
+
+		if (response.status === 404) {
+			return null;
 		}
-	}
 
-	/**
-	 * Invalidate a clan's cache
-	 *
-	 * @param clanTag The clan tag
-	 */
-	invalidateClanCache(clanTag: string): void {
-		const formattedTag = this.formatTag(clanTag);
-		const cacheKey = Cacheables.key("clan", formattedTag);
-
-		if (this.cache.isCached(cacheKey)) {
-			this.cache.delete(cacheKey);
-			console.log(`Invalidated cache for clan: ${formattedTag}`);
+		if (!response.ok) {
+			throw await toCocApiError(response);
 		}
+
+		return (await response.json()) as T;
 	}
 
-	/**
-	 * Format a player or clan tag to ensure it starts with #
-	 *
-	 * @param tag The tag to format
-	 * @returns The formatted tag
-	 */
-	private formatTag(tag: string): string {
-		return tag.startsWith("#") ? tag : `#${tag}`;
-	}
-
-	/**
-	 * Check if the exception message contains "not found"
-	 *
-	 * @param exception The exception to check
-	 * @returns true if the exception message contains "not found", false otherwise
-	 */
-	private isNotFound(exception: unknown): boolean {
-		return (
-			exception instanceof Error &&
-			typeof exception.message === "string" &&
-			exception.message.toLowerCase().includes("not found")
-		);
-	}
-
-	/**
-	 * Clear all caches
-	 */
-	clearCaches() {
-		this.cache.clear();
-		console.log("Cache cleared");
-	}
-
-	/**
-	 * Get all cache keys
-	 *
-	 * @returns An array of all cache keys
-	 */
-	getCacheKeys(): string[] {
-		return this.cache.keys();
+	#logAndNull(kind: string, tag: string, error: unknown): null {
+		const detail = error instanceof CocApiError ? `HTTP ${error.statusCode}: ${error.message}` : error;
+		console.error(`Clash of Clans API: cannot fetch ${kind} ${tag}.`, detail);
+		return null;
 	}
 }
+
+export const cocApiService = new CocApiService(config.COC_API.URL, config.COC_API.TOKEN);

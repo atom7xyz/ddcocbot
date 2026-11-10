@@ -1,74 +1,30 @@
-import { db } from "db";
-import type { clashProfiles, telegramProfiles, users } from "db/schema";
-import type { Bot, MessageContext } from "gramio";
+import { bold, format, join, mention } from "gramio";
+import type { CommandCtx } from "../handlers/context.ts";
+import { listUsers } from "../services/users.ts";
 
-interface DatabaseUser {
-	userId: number;
-	telegramId: bigint | null;
-	telegramUsername: string | null;
-	telegramName: string | null;
-	telegramLastName: string | null;
-	clashName: string | null;
-	clashTag: string | null;
+/** /dump — lists every row of the users table, including incomplete registrations. Owner only. */
+export async function dumpCommand(context: CommandCtx): Promise<void> {
+	const rows = await listUsers();
+
+	const lines = join(
+		rows,
+		({ clashProfile, telegramProfile }) => {
+			const clash = clashProfile ? `${clashProfile.name} (${clashProfile.tag})` : "Non collegato";
+			const label = telegramProfile?.username || telegramProfile?.firstName || String(telegramProfile?.id ?? "");
+			const telegram = telegramProfile
+				? mention(label, { id: Number(telegramProfile.id), is_bot: false, first_name: label })
+				: "Non collegato";
+			return format`• ${clash} - ${telegram}`;
+		},
+		"\n",
+	);
+
+	await context.reply(
+		format`${bold("Tutti gli Utenti nel Database:")}
+
+${lines}
+
+(${rows.length} utenti totali nel database)`,
+		{ disable_notification: true },
+	);
 }
-
-const databaseDumpMessage = (users: DatabaseUser[]) => `
-Tutti gli Utenti nel Database:
-${users
-	.map((user) => {
-		const clashInfo =
-			user.clashName && user.clashTag
-				? `${user.clashName} (${user.clashTag})`
-				: "Non collegato";
-		const telegramInfo =
-			user.telegramId && user.telegramUsername
-				? `[${user.telegramUsername}](tg://user?id=${user.telegramId})`
-				: "Non collegato";
-		return `• ${clashInfo} - ${telegramInfo}`;
-	})
-	.join("\n")}
-`;
-
-const dumpCommand = async (
-	context: MessageContext<Bot>,
-	user: typeof users.$inferSelect,
-	userClashProfile: typeof clashProfiles.$inferSelect,
-	userTelegramProfile: typeof telegramProfiles.$inferSelect,
-) => {
-	try {
-		const databaseUsers = await db.query.users.findMany({
-			with: {
-				clashProfile: true,
-				telegramProfile: true,
-			},
-		});
-
-		const normalizedUsers: DatabaseUser[] = databaseUsers.map((user) => ({
-			userId: user.id,
-			telegramId: user.telegramProfile?.id || null,
-			telegramUsername: user.telegramProfile?.username || null,
-			telegramName: user.telegramProfile?.firstName || null,
-			telegramLastName: user.telegramProfile?.lastName || null,
-			clashName: user.clashProfile?.name || null,
-			clashTag: user.clashProfile?.tag || null,
-		}));
-
-		// Sort by user ID for consistent ordering
-		normalizedUsers.sort((a, b) => a.userId - b.userId);
-
-		await context.reply(
-			`${databaseDumpMessage(normalizedUsers)}\n(${normalizedUsers.length} utenti totali nel database)`,
-			{
-				disable_notification: true,
-				parse_mode: "Markdown",
-			},
-		);
-	} catch (error) {
-		console.error("Error in dump command:", error);
-		await context.reply(
-			"Non è stato possibile recuperare i dati dal database.",
-		);
-	}
-};
-
-export { dumpCommand };

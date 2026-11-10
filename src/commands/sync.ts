@@ -1,57 +1,30 @@
-import type { MessageContext, Bot } from "gramio";
-import { db } from "db";
-import type { users, clashProfiles } from "db/schema";
-import { telegramProfiles } from "db/schema";
-import { eq } from "drizzle-orm";
-import { telegramApiService } from "services/api";
-import { config } from "config";
+import type { CommandCtx } from "../handlers/context.ts";
+import { getGroupMember } from "../services/api/index.ts";
+import { listUsers, updateTelegramNames } from "../services/users.ts";
 
-export const syncCommand = async (
-	context: MessageContext<Bot>,
-	user: typeof users.$inferSelect,
-	userClashProfile: typeof clashProfiles.$inferSelect,
-	userTelegramProfile: typeof telegramProfiles.$inferSelect,
-) => {
-	const allUsers = await db.query.users.findMany({
-		with: {
-			telegramProfile: true,
-			clashProfile: true,
-		},
-	});
+/** /sync — refreshes stored Telegram names from the group membership. */
+export async function syncCommand(context: CommandCtx): Promise<void> {
+	const all = await listUsers();
+	const registered = all.filter((u) => u.telegramProfile && u.clashProfile);
 
-	let counter = 0;
-
-	for (const user of allUsers) {
-		const telegramProfile = user.telegramProfile;
-		const clashProfile = user.clashProfile;
-
-		if (!telegramProfile || !clashProfile) {
-			continue;
-		}
-
-		const player = await telegramApiService.getChatMember(
-			Number(config.GROUP_ID),
-			Number(telegramProfile.id),
-		);
-
-		if (!player) {
-			continue;
-		}
-
-		await db
-			.update(telegramProfiles)
-			.set({
-				username: player.user.username ?? "",
-				firstName: player.user.first_name ?? "",
-				lastName: player.user.last_name ?? "",
-				lastSeen: new Date(),
-			})
-			.where(eq(telegramProfiles.id, telegramProfile.id));
-
-		++counter;
-	}
-
-	await context.reply(
-		`Sincronizzati ${counter} utenti (${allUsers.length} utenti visti totali)`,
+	const results = await Promise.all(
+		registered.map(async (user) => {
+			// biome-ignore lint/style/noNonNullAssertion: filtered above
+			const id = user.telegramProfile!.id;
+			const member = await getGroupMember(context.bot, id, true);
+			if (!member) {
+				return false;
+			}
+			await updateTelegramNames({
+				id: Number(id),
+				username: member.user.username,
+				firstName: member.user.first_name,
+				lastName: member.user.last_name,
+			});
+			return true;
+		}),
 	);
-};
+
+	const synced = results.filter(Boolean).length;
+	await context.reply(`Sincronizzati ${synced} utenti (${all.length} utenti visti totali)`);
+}

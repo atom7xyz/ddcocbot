@@ -1,97 +1,48 @@
-import { db } from "db";
-import type { clashProfiles, telegramProfiles, users } from "db/schema";
-import type { Bot, MessageContext } from "gramio";
-import { cocApiService, telegramApiService } from "services/api";
-import { config } from "config";
+import { bold, format, join, mention } from "gramio";
+import type { CommandCtx } from "../handlers/context.ts";
+import { splitArgs } from "../lib/args.ts";
+import { getGroupMember, isPresentInGroup } from "../services/api/index.ts";
+import { listUsers } from "../services/users.ts";
 
-interface NormalizedUser {
-	telegramId: bigint;
-	telegramUsername: string;
-	telegramName: string;
-	telegramLastName: string;
-	clashName: string;
-	clashTag: string;
-	presentInGroup: boolean;
-}
+/**
+ * /users [all] — lists registered users who are in the group.
+ * With "all", also lists registered users who left the group.
+ */
+export async function usersCommand(context: CommandCtx): Promise<void> {
+	const allMode = splitArgs(context.args)[0]?.toLowerCase() === "all";
+	const registered = (await listUsers()).filter((u) => u.telegramProfile && u.clashProfile);
 
-const listOfUsersMessage = (users: NormalizedUser[]) => `
-Utenti Registrati:
+	const rows = await Promise.all(
+		registered.map(async (user) => {
+			// biome-ignore lint/style/noNonNullAssertion: filtered above
+			const telegram = user.telegramProfile!;
+			// biome-ignore lint/style/noNonNullAssertion: filtered above
+			const clash = user.clashProfile!;
+			const groupMember = await getGroupMember(context.bot, telegram.id);
+			const present = isPresentInGroup(groupMember);
+			const tgUser = groupMember?.user;
+			const label =
+				tgUser?.username ?? tgUser?.first_name ?? (telegram.username || telegram.firstName || "sconosciuto");
 
-${users
-	.map(
-		(user) =>
-			`• ${user.clashName} - [${user.telegramUsername}](tg://user?id=${user.telegramId})`,
-	)
-	.join("\n")}
-`;
+			return { present, clashName: clash.name, telegramId: Number(telegram.id), label };
+		}),
+	);
 
-const usersCommand = async (
-	context: MessageContext<Bot>,
-	user: typeof users.$inferSelect,
-	userClashProfile: typeof clashProfiles.$inferSelect,
-	userTelegramProfile: typeof telegramProfiles.$inferSelect,
-) => {
-	const split = context.text?.split(" ");
-	const allMode = split != null && split[1] === "all";
+	const shown = rows.filter((row) => allMode || row.present);
 
-	const player = await cocApiService.getPlayer(userClashProfile.tag);
-	if (!player) {
-		await context.reply(
-			"Non è stato possibile recuperare le informazioni del giocatore.",
-		);
-		return;
-	}
-
-	const databaseUsers = await db.query.users.findMany({
-		with: {
-			clashProfile: true,
-			telegramProfile: true,
-		},
-	});
-
-	const normalizedListOfUsers: NormalizedUser[] = [];
-
-	for (const user of databaseUsers) {
-		if (!user.telegramProfile?.id || !user.clashProfile?.tag) {
-			continue;
-		}
-
-		const groupMembers = await telegramApiService.getChatMember(
-			Number(config.GROUP_ID),
-			Number(user.telegramProfile.id),
-		);
-
-		const firstName = groupMembers?.user.first_name;
-		const lastName = groupMembers?.user.last_name;
-		const username =
-			groupMembers?.user.username ?? firstName ?? lastName ?? "sconosciuto";
-
-		const isPresentInGroup =
-			!!groupMembers &&
-			["member", "administrator", "creator"].includes(groupMembers.status);
-
-		if (!isPresentInGroup && !allMode) {
-			continue;
-		}
-
-		normalizedListOfUsers.push({
-			telegramId: user.telegramProfile.id,
-			telegramUsername: username,
-			telegramName: firstName ?? "????",
-			telegramLastName: lastName ?? "????",
-			clashName: user.clashProfile?.name ?? "????",
-			clashTag: user.clashProfile?.tag ?? "????",
-			presentInGroup: isPresentInGroup,
-		});
-	}
+	const lines = join(
+		shown,
+		(row) =>
+			format`• ${row.clashName} - ${mention(row.label, { id: row.telegramId, is_bot: false, first_name: row.label })}${row.present ? "" : " (fuori dal gruppo)"}`,
+		"\n",
+	);
 
 	await context.reply(
-		`${listOfUsersMessage(normalizedListOfUsers)}\n(${normalizedListOfUsers.length} utenti totali registrati)`,
-		{
-			disable_notification: true,
-			parse_mode: "Markdown",
-		},
-	);
-};
+		format`${bold("Utenti Registrati:")}
 
-export { usersCommand };
+${lines}
+
+(${shown.length} utenti mostrati, ${registered.length} registrati)`,
+		{ disable_notification: true },
+	);
+}

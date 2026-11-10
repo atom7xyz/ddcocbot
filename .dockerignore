@@ -1,0 +1,11 @@
+.env
+.env.*
+!.env.example
+.git
+.vscode
+node_modules
+dist
+contrib
+docker-compose*.yml
+Dockerfile
+README.md

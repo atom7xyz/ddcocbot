@@ -1,29 +1,25 @@
-import type { Bot, MessageContext } from "gramio";
+import type { CommandCtx } from "../handlers/context.ts";
 
-const helpMessage = `
-Comandi del Bot:
+const HELP = `Comandi del Bot:
 
 Registrazione
-/start - Comando base
+/start - Avvia la registrazione (in chat privata)
 
 Informazioni Giocatore
-/profile #TAG - Mostra informazioni su un giocatore (anche via #TAG)
+/profile [#TAG | nome] - Mostra informazioni su un giocatore
 
 Informazioni Clan
-/clan - Mostra informazioni su un clan (anche via #TAG)
-/members - Elenca tutti i membri di un clan (anche via #TAG)
+/clan [#TAG] - Mostra informazioni su un clan
+/members [#TAG] - Elenca i membri di un clan (solo co-leaders)
 
 Comandi Amministrativi
-/ban #TAG - Banna un utente dal gruppo (solo co-leaders) (via #TAG)
-/users - Mostra tutti gli utenti registrati (solo co-leaders)
-/sync - Sincronizza gli utenti (solo co-leaders)
+/ban #TAG - Rimuove un utente dal gruppo (solo co-leaders)
+/users [all] - Mostra gli utenti registrati (solo co-leaders)
+/sync - Sincronizza i nomi Telegram degli utenti (solo co-leaders)
 
 Altro
-/help - Mostra la lista dei comandi
-`;
+/help - Mostra la lista dei comandi`;
 
-const helpCommand = async (context: MessageContext<Bot>) => {
-	await context.reply(helpMessage);
-};
-
-export { helpCommand };
+export async function helpCommand(context: CommandCtx): Promise<void> {
+	await context.reply(HELP);
+}

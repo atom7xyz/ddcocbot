@@ -1,0 +1,58 @@
+#!/bin/sh
+#
+# PROVIDE: ddcocbot
+# REQUIRE: LOGIN NETWORKING postgresql
+# KEYWORD: shutdown
+#
+# Install as /usr/local/etc/rc.d/ddcocbot (mode 0555), then add to /etc/rc.conf:
+#
+# ddcocbot_enable="YES"
+# ddcocbot_dir="/usr/local/ddcocbot"           # checkout with node_modules installed
+# ddcocbot_user="ddcocbot"
+# ddcocbot_runtime="node"                      # "node" (www/node24) or "bun" (>= 1.3.14)
+# ddcocbot_env_file="/usr/local/etc/ddcocbot.env"  # BOT_TOKEN, DATABASE_URL, ... (mode 0600)
+#
+# Output goes to syslog with the tag "ddcocbot". daemon(8) restarts the bot if it exits.
+
+. /etc/rc.subr
+
+name="ddcocbot"
+rcvar="ddcocbot_enable"
+
+load_rc_config "$name"
+
+: ${ddcocbot_enable:="NO"}
+: ${ddcocbot_dir:="/usr/local/ddcocbot"}
+: ${ddcocbot_user:="ddcocbot"}
+: ${ddcocbot_runtime:="node"}
+: ${ddcocbot_env_file:="/usr/local/etc/ddcocbot.env"}
+: ${ddcocbot_env:="NODE_ENV=production"}
+
+case "$ddcocbot_runtime" in
+node) ddcocbot_bin="/usr/local/bin/node" ;;
+bun) ddcocbot_bin="/usr/local/bin/bun" ;;
+*) err 1 "ddcocbot_runtime must be \"node\" or \"bun\"" ;;
+esac
+
+ddcocbot_chdir="$ddcocbot_dir"
+pidfile="/var/run/${name}.pid"
+procname="/usr/sbin/daemon"
+command="/usr/sbin/daemon"
+command_args="-r -R 5 -S -T ${name} -P ${pidfile} -u ${ddcocbot_user} ${ddcocbot_bin} src/index.ts"
+
+start_precmd="${name}_prestart"
+
+ddcocbot_prestart()
+{
+	if [ ! -x "$ddcocbot_bin" ]; then
+		err 1 "$ddcocbot_bin not found; install www/node24 or set ddcocbot_runtime"
+	fi
+	if [ ! -r "$ddcocbot_env_file" ]; then
+		err 1 "missing environment file $ddcocbot_env_file"
+	fi
+	if [ ! -d "${ddcocbot_dir}/node_modules" ]; then
+		err 1 "run 'npm ci --omit=dev' in $ddcocbot_dir first"
+	fi
+}
+
+run_rc_command "$1"

@@ -1,39 +1,32 @@
-# use the official Bun image
-# see all versions at https://hub.docker.com/r/oven/bun/tags
-FROM oven/bun:alpine AS base
-WORKDIR /usr/src/app
+# syntax=docker/dockerfile:1
+FROM oven/bun:1.4-alpine AS base
+WORKDIR /app
 
-# install dependencies into temp directory
-# this will cache them and speed up future builds
-FROM base AS install
-RUN mkdir -p /temp/dev
-COPY package.json bun.lock /temp/dev/
-RUN cd /temp/dev && bun install --frozen-lockfile
+# All dependencies, for the checks.
+FROM base AS deps
+COPY package.json bun.lock ./
+RUN bun install --frozen-lockfile
 
-# install with --production (exclude devDependencies)
-RUN mkdir -p /temp/prod
-COPY package.json bun.lock /temp/prod/
-RUN cd /temp/prod && bun install --frozen-lockfile --production
+# Type check and unit tests. The release stage copies from here, so a failing check fails the build.
+FROM deps AS check
+COPY tsconfig.json drizzle.config.ts ./
+COPY src ./src
+RUN bun run typecheck && bun test
 
-# copy node_modules from temp directory
-# then copy all (non-ignored) project files into the image
-FROM base AS prerelease
-COPY --from=install /temp/dev/node_modules node_modules
-COPY . .
+# Runtime dependencies only.
+FROM base AS prod-deps
+COPY package.json bun.lock ./
+RUN bun install --frozen-lockfile --production
 
-ENV NODE_ENV=production
-RUN bun x tsc --noEmit
-
-# copy production dependencies and source code into final image
 FROM base AS release
-COPY --from=install /temp/prod/node_modules node_modules
-COPY --from=prerelease /usr/src/app/.env .
-COPY --from=prerelease /usr/src/app/.env.production .
-RUN mkdir -p /usr/src/app/src
-COPY --from=prerelease /usr/src/app/src ./src
-COPY --from=prerelease /usr/src/app/package.json .
-COPY --from=prerelease /usr/src/app/tsconfig.json .
-COPY --from=prerelease /usr/src/app/drizzle ./drizzle
-COPY --from=prerelease /usr/src/app/drizzle.config.ts .
+ENV NODE_ENV=production
+COPY --from=prod-deps /app/node_modules ./node_modules
+COPY package.json tsconfig.json ./
+COPY --from=check /app/src ./src
+COPY drizzle ./drizzle
+USER bun
 
-ENTRYPOINT [ "bun", "start" ]
+# Secrets come from the environment (see docker-compose.yml), never from files baked into the image.
+# Run migrations with: docker compose run --rm bot src/db/migrate.ts
+ENTRYPOINT ["bun"]
+CMD ["src/index.ts"]

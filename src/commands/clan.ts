@@ -1,75 +1,57 @@
-import type { Bot, MessageContext } from "gramio";
-import type { Clan } from "services/api";
-import { cocApiService } from "services/api";
-import type { clashProfiles, telegramProfiles, users } from "db/schema";
+import { bold, code, format } from "gramio";
+import type { CommandCtx } from "../handlers/context.ts";
+import { splitArgs } from "../lib/args.ts";
+import { parseTag } from "../lib/tags.ts";
+import { type Clan, cocApiService } from "../services/api/index.ts";
+import type { Member } from "../services/users.ts";
 
-const clanMessage = (clan: Clan) => `
-Nome: \`${clan.name}\`
-Tag: \`${clan.tag}\`
-Livello: \`${clan.clanLevel}\`
-Descrizione: 
-\`${clan.description}\`
+const clanMessage = (clan: Clan) => format`${bold("Informazioni Clan")}
 
-Membri: 👥 \`${clan.memberList.length}\`
-Tipo: \`${clan.type}\`
-Frequenza Guerra: \`${clan.warFrequency}\`
+Nome: ${code(clan.name)}
+Tag: ${code(clan.tag)}
+Livello: ${code(clan.clanLevel)}
+Descrizione:
+${code(clan.description || "—")}
+
+Membri: 👥 ${code(clan.memberList.length)}
+Tipo: ${code(clan.type)}
+Frequenza Guerra: ${code(clan.warFrequency ?? "—")}
 
 Statistiche Guerra:
-- Vittorie: \`${clan.warWins}\` ✅
-- Serie Vittorie: \`${clan.warWinStreak}\` 🔥
-- Sconfitte: \`${clan.warLosses}\` ❌
-- Pareggi: \`${clan.warTies}\` 🔄
+- Vittorie: ${code(clan.warWins)} ✅
+- Serie Vittorie: ${code(clan.warWinStreak)} 🔥
+- Sconfitte: ${code(clan.warLosses ?? "—")} ❌
+- Pareggi: ${code(clan.warTies ?? "—")} 🔄
 
 Coppe:
-- Coppe del Clan: \`${clan.clanPoints}\` 🏆
-- Coppe della Capitale: \`${clan.clanCapitalPoints}\` 🏰
-`;
+- Coppe del Clan: ${code(clan.clanPoints)} 🏆
+- Coppe della Capitale: ${code(clan.clanCapitalPoints ?? "—")} 🏰`;
 
-const clanCommand = async (
-	context: MessageContext<Bot>,
-	user: typeof users.$inferSelect,
-	userClashProfile: typeof clashProfiles.$inferSelect,
-	userTelegramProfile: typeof telegramProfiles.$inferSelect,
-) => {
-	const split = context.text?.split(" ");
-	const argLength = split?.length ?? 0;
+/** /clan [#TAG] — shows a clan. Without a tag, shows the clan of the caller. */
+export async function clanCommand(context: CommandCtx, member: Member): Promise<void> {
+	const [arg] = splitArgs(context.args);
+	let tag: string | null | undefined;
 
-	if (split && argLength > 1) {
-		await getInfoFromTag(context, split[1]);
-		return;
+	if (arg) {
+		tag = parseTag(arg);
+	} else {
+		tag = (await cocApiService.getPlayer(member.clashProfile.tag))?.clan?.tag;
+		if (!tag) {
+			await context.reply("Non sei membro di nessun clan.");
+			return;
+		}
 	}
 
-	const player = await cocApiService.getPlayer(userClashProfile.tag);
-
-	if (!player || !player.clan) {
-		await context.send("Non sei membro di nessun clan.");
-		return;
-	}
-
-	await getInfoFromTag(context, player.clan.tag);
-};
-
-const getInfoFromTag = async (
-	context: MessageContext<Bot>,
-	tag: string | undefined,
-) => {
 	if (!tag) {
-		await context.send("Per favore, fornisci un tag di clan valido.");
+		await context.reply("Per favore, fornisci un tag di clan valido.");
 		return;
 	}
 
 	const clan = await cocApiService.getClan(tag);
-
 	if (!clan) {
-		await context.send(
-			"Non è stato possibile recuperare le informazioni del clan. Per favore, riprova più tardi.",
-		);
+		await context.reply("Non è stato possibile recuperare le informazioni del clan. Per favore, riprova più tardi.");
 		return;
 	}
 
-	await context.reply(clanMessage(clan), {
-		parse_mode: "Markdown",
-	});
-};
-
-export { clanCommand };
+	await context.reply(clanMessage(clan));
+}

@@ -1,86 +1,42 @@
-import type { Bot, MessageContext } from "gramio";
-import { cocApiService } from "services/api";
-import type { Player } from "services/api/models/cocModels";
-import { clashProfiles, type telegramProfiles, type users } from "db/schema";
-import { suggestClashOfStatsKeyboard } from "shared/keyboards";
-import { db } from "db";
-import { eq } from "drizzle-orm";
+import { bold, code, format } from "gramio";
+import type { CommandCtx } from "../handlers/context.ts";
+import { clashOfStatsKeyboard } from "../keyboards.ts";
+import { parseTag } from "../lib/tags.ts";
+import { cocApiService, type Player } from "../services/api/index.ts";
+import { findClashProfileByName, type Member } from "../services/users.ts";
 
-const playerMessage = (player: Player) => `
-Informazioni Giocatore
+const playerMessage = (player: Player) => format`${bold("Informazioni Giocatore")}
 
-Nome: \`${player.name}\`
-Tag: \`${player.tag}\`
-Municipio: \`${player.townHallLevel}\` 🏠
-Livello: \`${player.expLevel}\` 🎖
-Coppe: \`${player.trophies}\` 🏆 (Record: \`${player.bestTrophies}\`)
+Nome: ${code(player.name)}
+Tag: ${code(player.tag)}
+Municipio: ${code(player.townHallLevel)} 🏠
+Livello: ${code(player.expLevel)} 🎖
+Coppe: ${code(player.trophies)} 🏆 (Record: ${code(player.bestTrophies)})
 
-Clan: \`${player.clan?.name ?? "Nessuno"}\`
-`;
+Clan: ${code(player.clan?.name ?? "Nessuno")}`;
 
-const playerCommand = async (
-	context: MessageContext<Bot>,
-	user: typeof users.$inferSelect,
-	userClashProfile: typeof clashProfiles.$inferSelect,
-	userTelegramProfile: typeof telegramProfiles.$inferSelect,
-) => {
-	const split = context.text?.split(" ");
-	const tag = split != null ? split[1] : userClashProfile.tag;
+/**
+ * /profile [#TAG | name] — shows a player.
+ * Without an argument, shows the caller. A name is looked up among registered users.
+ */
+export async function profileCommand(context: CommandCtx, member: Member): Promise<void> {
+	const query = context.args?.trim();
+	let tag: string | null;
 
-	if (tag?.startsWith("#")) {
-		await getInfoFromTag(context, tag);
-		return;
+	if (!query) {
+		tag = member.clashProfile.tag;
+	} else if (query.startsWith("#")) {
+		tag = parseTag(query);
+	} else {
+		tag = (await findClashProfileByName(query))?.tag ?? null;
 	}
 
-	await getInfoFromName(context, tag, userClashProfile);
-};
-
-const getInfoFromName = async (
-	context: MessageContext<Bot>,
-	name: string | undefined,
-	userClashProfile: typeof clashProfiles.$inferSelect,
-) => {
-	if (!name) {
-		getInfoFromName(context, userClashProfile.name, userClashProfile);
-		return;
-	}
-
-	const clashProfile = await db.query.clashProfiles.findFirst({
-		where: eq(clashProfiles.name, name),
-	});
-
-	if (!clashProfile) {
-		await context.reply("Per favore, fornisci un nome giocatore valido.");
-		return;
-	}
-
-	const player = await cocApiService.getPlayer(clashProfile.tag);
-	if (!player) {
-		await context.reply(
-			"Non è stato possibile recuperare le informazioni del giocatore. Per favore, riprova più tardi.",
-		);
-		return;
-	}
-
-	await context.reply(playerMessage(player), {
-		parse_mode: "Markdown",
-		reply_markup: {
-			inline_keyboard: suggestClashOfStatsKeyboard(player.name, player.tag),
-		},
-	});
-};
-
-const getInfoFromTag = async (
-	context: MessageContext<Bot>,
-	tag: string | undefined,
-) => {
 	if (!tag) {
-		await context.reply("Per favore, fornisci un tag giocatore valido.");
+		await context.reply("Per favore, fornisci un tag o il nome di un giocatore registrato.");
 		return;
 	}
 
 	const player = await cocApiService.getPlayer(tag);
-
 	if (!player) {
 		await context.reply(
 			"Non è stato possibile recuperare le informazioni del giocatore. Per favore, riprova più tardi.",
@@ -89,11 +45,6 @@ const getInfoFromTag = async (
 	}
 
 	await context.reply(playerMessage(player), {
-		parse_mode: "Markdown",
-		reply_markup: {
-			inline_keyboard: suggestClashOfStatsKeyboard(player.name, player.tag),
-		},
+		reply_markup: clashOfStatsKeyboard(player.name, player.tag),
 	});
-};
-
-export { playerCommand };
+}

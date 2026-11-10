@@ -1,101 +1,53 @@
-import { format, type Bot, type MessageContext } from "gramio";
-import { cocApiService } from "services/api";
-import type { Clan, ClanMember } from "services/api/models/cocModels";
-import type { clashProfiles, telegramProfiles, users } from "db/schema";
+import { bold, format, join } from "gramio";
+import type { CommandCtx } from "../handlers/context.ts";
+import { splitArgs } from "../lib/args.ts";
+import { roleLabel, roleRank } from "../lib/roles.ts";
+import { parseTag } from "../lib/tags.ts";
+import { type ClanMember, cocApiService } from "../services/api/index.ts";
+import type { Member } from "../services/users.ts";
 
-const membersMessage = (clan: Clan, members: ClanMember[]) => `
-Membri del clan ${clan.name} (${clan.tag}):\n\n${sortMembersByRole(members)
-	.map(
-		(member) =>
-			`${memberRoleMessage(member.role)} — ${member.name} (${member.tag})`,
-	)
-	.join("\n")}
-`;
+/** Leaders first, then by in-game clan rank. Returns a new array. */
+const sortMembers = (members: readonly ClanMember[]) =>
+	members.toSorted((a, b) => roleRank(a.role) - roleRank(b.role) || a.clanRank - b.clanRank);
 
-const sortMembersByRole = (members: ClanMember[]) => {
-	const rolePriority = {
-		leader: 1,
-		coLeader: 2,
-		admin: 3,
-		member: 4,
-	};
-	return members.sort((a, b) => {
-		const roleComparison =
-			rolePriority[a.role as keyof typeof rolePriority] -
-			rolePriority[b.role as keyof typeof rolePriority];
-		return roleComparison !== 0 ? roleComparison : a.expLevel - b.expLevel;
-	});
-};
+/** /members [#TAG] — lists the members of a clan, by role. */
+export async function membersCommand(context: CommandCtx, member: Member): Promise<void> {
+	const [arg] = splitArgs(context.args);
+	let tag: string | null | undefined;
 
-const memberRoleMessage = (role: string) => {
-	switch (role.toLowerCase()) {
-		case "leader":
-			return "capo";
-		case "coleader":
-			return "co-capo";
-		case "admin":
-			return "anziano";
-		case "member":
-			return "membro";
-		default:
-			return "?";
-	}
-};
-
-const membersCommand = async (
-	context: MessageContext<Bot>,
-	user: typeof users.$inferSelect,
-	userClashProfile: typeof clashProfiles.$inferSelect,
-	userTelegramProfile: typeof telegramProfiles.$inferSelect,
-) => {
-	const split = context.text?.split(" ");
-	const argLength = split?.length ?? 0;
-
-	if (split && argLength > 1) {
-		await getMembers(context, split[1]);
-		return;
+	if (arg) {
+		tag = parseTag(arg);
+	} else {
+		const player = await cocApiService.getPlayer(member.clashProfile.tag);
+		if (!player) {
+			await context.reply("Non è stato possibile recuperare le informazioni del tuo clan.");
+			return;
+		}
+		tag = player.clan?.tag;
+		if (!tag) {
+			await context.reply("Non sei membro di nessun clan.");
+			return;
+		}
 	}
 
-	const player = await cocApiService.getPlayer(userClashProfile.tag);
-
-	if (!player) {
-		await context.reply(
-			"Non è stato possibile recuperare le informazioni del tuo clan.",
-		);
-		return;
-	}
-
-	if (!player.clan) {
-		await context.reply("Non sei membro di nessun clan.");
-		return;
-	}
-
-	await getMembers(context, player.clan.tag);
-};
-
-const getMembers = async (
-	context: MessageContext<Bot>,
-	tag: string | undefined,
-) => {
 	if (!tag) {
 		await context.reply("Per favore, fornisci un tag di clan valido.");
 		return;
 	}
 
 	const clan = await cocApiService.getClan(tag);
-
 	if (!clan) {
-		await context.reply(
-			"Non è stato possibile recuperare le informazioni del clan.",
-		);
+		await context.reply("Non è stato possibile recuperare le informazioni del clan.");
 		return;
 	}
 
-	const members = clan.memberList;
+	const lines = join(sortMembers(clan.memberList), (m) => format`${roleLabel(m.role)} — ${m.name} (${m.tag})`, "\n");
 
 	await context.reply(
-		format`${membersMessage(clan, members)}\n(${clan.memberList.length} membri totali)`,
-	);
-};
+		format`${bold(`Membri del clan ${clan.name} (${clan.tag})`)}
 
-export { membersCommand };
+${lines}
+
+(${clan.memberList.length} membri totali)`,
+	);
+}

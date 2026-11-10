@@ -1,30 +1,40 @@
 {
+	"name": "ddcocbot",
 	"private": true,
 	"type": "module",
+	"engines": {
+		"bun": ">=1.3.14",
+		"node": ">=22.18.0"
+	},
 	"scripts": {
 		"dev": "bun --watch src/index.ts",
 		"start": "NODE_ENV=production bun src/index.ts",
-		"lint": "bun x @biomejs/biome check",
-		"lint:fix": "bun run lint --fix",
-		"generate": "bun x drizzle-kit generate",
-		"push": "bun x drizzle-kit push",
-		"migrate": "bun x drizzle-kit migrate",
-		"studio": "bun x drizzle-kit studio"
+		"dev:node": "node --watch --env-file-if-exists=.env src/index.ts",
+		"start:node": "NODE_ENV=production node --env-file-if-exists=.env --env-file-if-exists=.env.production src/index.ts",
+		"migrate": "bun src/db/migrate.ts",
+		"migrate:node": "node --env-file-if-exists=.env --env-file-if-exists=.env.production src/db/migrate.ts",
+		"test": "node --test \"src/**/*.test.ts\"",
+		"typecheck": "tsc --noEmit",
+		"lint": "biome check",
+		"lint:fix": "biome check --write",
+		"check": "npm run typecheck && npm run lint && npm test",
+		"db:generate": "drizzle-kit generate",
+		"db:push": "drizzle-kit push",
+		"db:studio": "drizzle-kit studio"
 	},
 	"dependencies": {
 		"@gramio/auto-retry": "^0.0.3",
-		"@gramio/prompt": "^1.2.1",
-		"@verrou/core": "^0.5.1",
-		"cacheables": "^2.0.0",
-		"drizzle-orm": "^0.41.0",
+		"drizzle-orm": "^0.45.4",
 		"env-var": "^7.5.0",
-		"gramio": "^0.2.6",
-		"pg": "^8.16.3"
+		"gramio": "^0.15.3",
+		"pg": "^8.23.1"
 	},
 	"devDependencies": {
-		"@biomejs/biome": "^1.9.4",
-		"@types/bun": "^1.2.21",
-		"drizzle-kit": "^0.30.6",
-		"typescript": "^5.9.2"
+		"@biomejs/biome": "^2.6.6",
+		"@types/bun": "^1.4.4",
+		"@types/node": "^24.0.0",
+		"@types/pg": "^8.23.1",
+		"drizzle-kit": "^0.31.11",
+		"typescript": "^7.0.2"
 	}
 }

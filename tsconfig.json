@@ -1,19 +1,27 @@
 {
 	"compilerOptions": {
-		"lib": ["ESNext"],
-		"module": "ESNext",
-		"target": "ESNext",
-		"esModuleInterop": true,
-		"moduleResolution": "Bundler",
+		"target": "ES2023",
+		"lib": ["ES2023"],
+		"module": "NodeNext",
+		"moduleResolution": "NodeNext",
+		"types": ["node", "bun"],
 		"noEmit": true,
 		"allowImportingTsExtensions": true,
-		"skipLibCheck": true,
+
+		// Keep the source runnable by Node's built-in type stripping as well as by Bun.
+		"erasableSyntaxOnly": true,
+		"verbatimModuleSyntax": true,
+
 		"strict": true,
-		"noFallthroughCasesInSwitch": true,
-		"forceConsistentCasingInFileNames": true,
 		"noUncheckedIndexedAccess": true,
-		"baseUrl": "./src",
-		"rootDir": "./src"
+		"exactOptionalPropertyTypes": true,
+		"noImplicitOverride": true,
+		"noImplicitReturns": true,
+		"noFallthroughCasesInSwitch": true,
+		"noUnusedLocals": true,
+		"noUnusedParameters": true,
+		"forceConsistentCasingInFileNames": true,
+		"skipLibCheck": true
 	},
-	"include": ["src"]
+	"include": ["src", "drizzle.config.ts"]
 }

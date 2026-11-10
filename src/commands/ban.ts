@@ -1,66 +1,48 @@
-import { config } from "config";
-import { db } from "db";
-import type { clashProfiles, telegramProfiles } from "db/schema";
-import { users } from "db/schema";
-import { eq } from "drizzle-orm";
-import type { Bot, MessageContext } from "gramio";
-import { telegramApiService } from "services/api";
+import { config } from "../config.ts";
+import type { CommandCtx } from "../handlers/context.ts";
+import { splitArgs } from "../lib/args.ts";
+import { parseTag } from "../lib/tags.ts";
+import { forgetGroupMember, getGroupMember } from "../services/api/index.ts";
+import { findUserByTag } from "../services/users.ts";
 
-export const banCommand = async (
-	context: MessageContext<Bot>,
-	user: typeof users.$inferSelect,
-	userClashProfile: typeof clashProfiles.$inferSelect,
-	userTelegramProfile: typeof telegramProfiles.$inferSelect,
-) => {
-	const split = context.text?.split(" ");
-	const argsLength = split?.length ?? 0;
+/** /ban #TAG — removes the Telegram user linked to a tag from the group. */
+export async function banCommand(context: CommandCtx): Promise<void> {
+	const args = splitArgs(context.args);
 
-	if (!split || argsLength !== 2) {
-		await context.reply("Utilizzo: /ban <tag>");
+	if (args.length !== 1) {
+		await context.reply("Utilizzo: /ban #TAG");
 		return;
 	}
 
-	const tag = split[1];
-
+	const tag = parseTag(args[0]);
 	if (!tag) {
-		await context.reply(`${tag} non valido`);
+		await context.reply(`${args[0]} non è un tag valido.`);
 		return;
 	}
 
-	const target = await db.query.users.findFirst({
-		where: eq(users.clashProfileTag, tag),
-		with: {
-			clashProfile: true,
-			telegramProfile: true,
-		},
-	});
-
-	if (!target || !target.telegramProfile || !target.clashProfile) {
-		await context.reply(`${tag} non trovato`);
+	const target = await findUserByTag(tag);
+	if (!target?.telegramProfile || !target.clashProfile) {
+		await context.reply(`${tag} non trovato.`);
 		return;
 	}
 
-	const chatMember = await telegramApiService.getChatMember(
-		Number(config.GROUP_ID),
-		Number(target.telegramProfile.id),
-	);
+	const telegramId = Number(target.telegramProfile.id);
+	const chatMember = await getGroupMember(context.bot, telegramId, true);
 
 	if (!chatMember) {
-		await context.reply(`${target.telegramProfile.id} non trovato`);
+		await context.reply(`L'utente Telegram ${telegramId} non è stato trovato nel gruppo.`);
 		return;
 	}
 
-	if (["creator", "administrator"].includes(chatMember.status)) {
+	if (chatMember.status === "creator" || chatMember.status === "administrator") {
 		await context.reply("Non puoi bannare un creatore o un amministratore!");
 		return;
 	}
 
-	await context.banMember({
-		chat_id: Number(config.GROUP_ID),
-		user_id: Number(target.telegramProfile.id),
-	});
+	await context.bot.api.banChatMember({ chat_id: config.GROUP_ID, user_id: telegramId });
+	forgetGroupMember(telegramId);
 
 	await context.reply(
-		`${target.telegramProfile.firstName} (${target.clashProfile.name}) è stato rimosso dal gruppo.`,
+		`${target.telegramProfile.firstName || telegramId} (${target.clashProfile.name}) è stato rimosso dal gruppo.`,
 	);
-};
+}

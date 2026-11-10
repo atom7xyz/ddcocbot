@@ -1,25 +1,35 @@
 services:
   bot:
-    container_name: ddcocbot-bot
+    container_name: ddcocbot
     restart: unless-stopped
-    build:
-      context: .
-      dockerfile: Dockerfile
+    build: .
+    env_file:
+      - path: .env
+        required: false
+      - path: .env.production
+        required: false
     environment:
-      - NODE_ENV=production
+      NODE_ENV: production
+    depends_on:
+      postgres:
+        condition: service_healthy
+
   postgres:
     container_name: ddcocbot-postgres
-    image: postgres:alpine
+    # Keep the major version that initialized the data volume. Upgrading the major needs pg_upgrade or a dump/restore.
+    image: postgres:17-alpine
     restart: unless-stopped
     environment:
-      - POSTGRES_USER=ddcocbot
-      - POSTGRES_PASSWORD=54f879079d2e4e852d83c727
-      - POSTGRES_DB=ddcocbot
+      POSTGRES_USER: ddcocbot
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}
+      POSTGRES_DB: ddcocbot
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ddcocbot -d ddcocbot"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
     volumes:
       - postgres_data:/var/lib/postgresql/data
+
 volumes:
   postgres_data:
-
-
-networks:
-  default: {}

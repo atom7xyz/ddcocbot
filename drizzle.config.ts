@@ -1,7 +1,4 @@
 import type { Config } from "drizzle-kit";
-import env from "env-var";
-
-const DATABASE_URL = env.get("DATABASE_URL").required().asString();
 
 export default {
 	schema: "./src/db/schema.ts",
@@ -9,6 +6,7 @@ export default {
 	dialect: "postgresql",
 	casing: "snake_case",
 	dbCredentials: {
-		url: DATABASE_URL,
+		// Only `push`, `pull` and `studio` connect; `generate` works without a database.
+		url: process.env.DATABASE_URL ?? "postgresql://localhost:5432/ddcocbot",
 	},
 } satisfies Config;
