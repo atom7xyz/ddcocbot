@@ -35,10 +35,13 @@ bun) ddcocbot_bin="/usr/local/bin/bun" ;;
 esac
 
 ddcocbot_chdir="$ddcocbot_dir"
-pidfile="/var/run/${name}.pid"
+# rc.subr runs the command as ${name}_user via su(1), so daemon(8) is not root
+# and cannot write to /var/run itself; give it a directory it owns.
+piddir="/var/run/${name}"
+pidfile="${piddir}/${name}.pid"
 procname="/usr/sbin/daemon"
 command="/usr/sbin/daemon"
-command_args="-r -R 5 -S -T ${name} -P ${pidfile} -u ${ddcocbot_user} ${ddcocbot_bin} src/index.ts"
+command_args="-f -r -R 5 -S -T ${name} -P ${pidfile} ${ddcocbot_bin} src/index.ts"
 
 start_precmd="${name}_prestart"
 
@@ -53,6 +56,7 @@ ddcocbot_prestart()
 	if [ ! -d "${ddcocbot_dir}/node_modules" ]; then
 		err 1 "run 'npm ci --omit=dev' in $ddcocbot_dir first"
 	fi
+	install -d -o "$ddcocbot_user" -m 0755 "$piddir"
 }
 
 run_rc_command "$1"
