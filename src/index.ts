@@ -1,3 +1,4 @@
+import "./logging.ts";
 import { bot } from "./bot.ts";
 import { pool } from "./db/index.ts";
 

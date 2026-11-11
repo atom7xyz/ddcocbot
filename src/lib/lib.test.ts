@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import { splitArgs } from "./args.ts";
+import { createRedactor } from "./redact.ts";
 import { isClanAdminRole, roleLabel, roleRank, toDbRole } from "./roles.ts";
 import { isValidTag, normalizeTag, parseTag } from "./tags.ts";
 import { TtlCache } from "./ttlCache.ts";
@@ -97,5 +98,26 @@ describe("TtlCache", () => {
 
 		await cache.getOrLoad("k", load);
 		assert.equal(await cache.getOrLoad("k", load, true), 2);
+	});
+});
+
+describe("createRedactor", () => {
+	// Synthetic value with the shape of a bot token: digits, a colon, 35 characters.
+	const fakeToken = `123456789:${"x".repeat(35)}`;
+
+	it("removes a bot token from a Telegram API URL", () => {
+		const redact = createRedactor([]);
+		const url = `https://api.telegram.org/bot${fakeToken}/getUpdates`;
+		assert.equal(redact(url), "https://api.telegram.org/bot[REDACTED]/getUpdates");
+	});
+
+	it("removes known secrets and ignores short or missing ones", () => {
+		const redact = createRedactor(["coc-api-secret-value", "abc", undefined, null]);
+		assert.equal(redact("Bearer coc-api-secret-value abc"), "Bearer [REDACTED] abc");
+	});
+
+	it("replaces every occurrence", () => {
+		const redact = createRedactor(["s3cr3t-password"]);
+		assert.equal(redact("s3cr3t-password and s3cr3t-password"), "[REDACTED] and [REDACTED]");
 	});
 });
