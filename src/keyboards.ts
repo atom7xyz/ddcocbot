@@ -18,7 +18,7 @@ export const startKeyboard = () => new InlineKeyboard().text("Iniziamo!", Callba
 export const tagHelpKeyboard = () => new InlineKeyboard().text("Dove trovo il mio TAG?", CallbackData.howtoTag);
 
 export const apiTokenHelpKeyboard = () =>
-	new InlineKeyboard().text("Dove trovo il mio API Token?", CallbackData.howtoApiToken);
+	new InlineKeyboard().text("Dove trovo la mia Chiave API?", CallbackData.howtoApiToken);
 
 export const clashOfStatsKeyboard = (name: string, tag: string) =>
 	new InlineKeyboard().url(

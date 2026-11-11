@@ -1,4 +1,4 @@
-import { format, italic, MediaUpload } from "gramio";
+import { format, italic } from "gramio";
 import { config } from "../config.ts";
 import type { CallbackCtx, CommandCtx, MessageCtx } from "../handlers/context.ts";
 import { apiTokenHelpKeyboard, startKeyboard, tagHelpKeyboard } from "../keyboards.ts";
@@ -6,6 +6,7 @@ import { toDbRole } from "../lib/roles.ts";
 import { parseTag } from "../lib/tags.ts";
 import { cocApiService, createGroupInviteLink } from "../services/api/index.ts";
 import { clearConversation, getConversation, setConversation } from "../services/conversations.ts";
+import { sendAssetPhoto } from "../services/photos.ts";
 import {
 	findMember,
 	findUserByTag,
@@ -17,10 +18,24 @@ import {
 const TAG_EXAMPLE = "#2P0R98UYJ";
 const API_TOKEN_PATTERN = /^[a-z0-9]{8}$/i;
 
-const TAG_IMAGE_URL = "https://atom7.xyz/share/u/P3qCUwVA.png";
-const API_TOKEN_IMAGE_URLS = [
-	"https://atom7.xyz/share/u/KNJKkhqu.png",
-	"https://atom7.xyz/share/u/O2Zd1jjJ.png",
+/** Step-by-step screenshots for finding the API key, sent in this order. */
+const API_KEY_STEPS = [
+	{
+		asset: "howto-api-key-1.jpg",
+		caption: format`1️⃣ Tocca l'icona del tuo profilo in alto a sinistra.`,
+	},
+	{
+		asset: "howto-api-key-2.jpg",
+		caption: format`2️⃣ Apri la scheda ${italic("Impostazioni")} e tocca ${italic("Altre impostazioni")}.`,
+	},
+	{
+		asset: "howto-api-key-3.jpg",
+		caption: format`3️⃣ Nella sezione ${italic("Chiave API")}, tocca ${italic("Mostra")}.`,
+	},
+	{
+		asset: "howto-api-key-4.jpg",
+		caption: format`4️⃣ Tocca ${italic("Copia")} e incolla qui la tua Chiave API.`,
+	},
 ] as const;
 
 function identityOf(from: {
@@ -70,20 +85,19 @@ export async function startCallback(context: CallbackCtx): Promise<void> {
 export async function howtoTagCallback(context: CallbackCtx): Promise<void> {
 	await context.answerCallbackQuery({ text: "👍" });
 	await context.sendChatAction("upload_photo");
-	await context.sendPhoto(await MediaUpload.url(TAG_IMAGE_URL), {
-		caption: `Puoi trovare il tuo TAG nel tuo profilo di Clash of Clans, ad esempio: ${TAG_EXAMPLE}`,
-	});
+	await sendAssetPhoto(
+		context,
+		"howto-tag.jpg",
+		`Puoi trovare il tuo TAG nel tuo profilo di Clash of Clans, sotto il tuo nome (esempio: ${TAG_EXAMPLE}).`,
+	);
 }
 
 export async function howtoApiTokenCallback(context: CallbackCtx): Promise<void> {
 	await context.answerCallbackQuery({ text: "👍" });
 	await context.sendChatAction("upload_photo");
-	await context.sendPhoto(await MediaUpload.url(API_TOKEN_IMAGE_URLS[0]), {
-		caption: format`Puoi trovare il tuo API Token nella sezione ${italic("Impostazioni")} e poi ${italic("Altre impostazioni")} di Clash of Clans.`,
-	});
-	await context.sendPhoto(await MediaUpload.url(API_TOKEN_IMAGE_URLS[1]), {
-		caption: format`Cliccando il bottone ${italic("Mostra")} e poi ${italic("Copia")} potrai ottenere il tuo API Token.`,
-	});
+	for (const step of API_KEY_STEPS) {
+		await sendAssetPhoto(context, step.asset, step.caption);
+	}
 }
 
 /**
@@ -144,7 +158,7 @@ async function handleTag(context: MessageCtx, input: string): Promise<void> {
 
 	await context.react("👍");
 	await context.reply(
-		format`Ora servirebbe che mi indicassi il tuo API Token, lo puoi trovare nella sezione ${italic("Impostazioni")} e poi ${italic("Altre impostazioni")} del tuo profilo di Clash of Clans.`,
+		format`Ora servirebbe che mi indicassi la tua Chiave API, la puoi trovare nella sezione ${italic("Impostazioni")} e poi ${italic("Altre impostazioni")} del tuo profilo di Clash of Clans.`,
 		{ reply_markup: apiTokenHelpKeyboard() },
 	);
 }
@@ -154,7 +168,7 @@ async function handleApiToken(context: MessageCtx, input: string, tag: string): 
 
 	if (!API_TOKEN_PATTERN.test(token)) {
 		await context.reply(
-			"Il token non è valido. Un token valido:\n- È lungo esattamente 8 caratteri\n- Contiene solo lettere e numeri\nVerifica di aver copiato correttamente il token e riprova.",
+			"La Chiave API non è valida. Una Chiave API valida:\n- È lunga esattamente 8 caratteri\n- Contiene solo lettere e numeri\nVerifica di aver copiato correttamente la Chiave API e riprova.",
 		);
 		return;
 	}
@@ -163,7 +177,7 @@ async function handleApiToken(context: MessageCtx, input: string, tag: string): 
 
 	if (!(await cocApiService.verifyPlayerToken(tag, token))) {
 		await context.reply(
-			`Il token non è valido per il tag ${tag}.\n\nIl token cambia ogni pochi minuti: copia quello attuale dal gioco e riprova.`,
+			`La Chiave API non è valida per il tag ${tag}.\n\nLa Chiave API cambia ogni pochi minuti: copia quella attuale dal gioco e riprova.`,
 		);
 		return;
 	}

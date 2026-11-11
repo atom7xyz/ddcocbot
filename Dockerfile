@@ -24,6 +24,7 @@ COPY --from=prod-deps /app/node_modules ./node_modules
 COPY package.json tsconfig.json ./
 COPY --from=check /app/src ./src
 COPY drizzle ./drizzle
+COPY assets ./assets
 USER bun
 
 # Secrets come from the environment (see docker-compose.yml), never from files baked into the image.
